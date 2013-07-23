@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Phoria - Dev test page 3</title>
+      <script src="scripts/gl-matrix.js"></script>
+      <script src="scripts/phoria-util.js"></script>
+      <script src="scripts/phoria-entity.js"></script>
+      <script src="scripts/phoria-scene.js"></script>
+      <script src="scripts/phoria-renderer.js"></script>
+      <script src='scripts/dat.gui.min.js'></script>
+      <script>
+var requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+                       window.mozRequestAnimationFrame || window.msRequestAnimationFrame || 
+                       function(c) {window.setTimeout(c, 15)};
+/**
+   Phoria
+   pho·ri·a (fôr-)
+   n. The relative directions of the eyes during binocular fixation on a given object
+*/
+
+// bind to window onload event
+window.addEventListener('load', onloadHandler, false);
+
+function onloadHandler()
+{
+   // get the canvas DOM element and the 2D drawing context
+   var canvas = document.getElementById('canvas');
+   
+   // create the scene and setup camera, perspective and viewport
+   var scene = new Phoria.Scene();
+   scene.camera.position = {x:0.0, y:5.0, z:-15.0};
+   scene.perspective.aspect = canvas.width / canvas.height;
+   scene.viewport.width = canvas.width;
+   scene.viewport.height = canvas.height;
+   
+   // create a canvas renderer
+   var renderer = new Phoria.CanvasRenderer(canvas);
+   
+   // GENERATE TEST ENTITIES
+   // add a grid to help visualise camera position etc.
+   var plane = Phoria.Util.generateTesselatedPlane(16,16,0,20);
+   scene.graph.push(Phoria.Entity.create({
+      points: plane.points,
+      edges: plane.edges,
+      polygons: plane.polygons,
+      style: {
+         drawmode: "wireframe",
+         linewidth: 0.5,
+         sortmode: "unsorted"
+      }
+   }));
+   var s = Phoria.Util.generateSphere(1, 12, 24);
+   var sphere = Phoria.Entity.create({
+      points: s.points,
+      edges: s.edges,
+      polygons: s.polygons,
+      style: {
+         specular: 0,
+         linescale: 10,
+         drawmode: "point",
+         fillmode: "inflate"
+      }
+   });
+   sphere.scaleN(3);
+   scene.graph.push(sphere);
+
+   // add a light
+   scene.graph.push(Phoria.DistantLight.create({
+      color: [0.5,0.5,1.0],
+      intensity: 0.25,
+      direction: {x:0, y:-5, z:5}
+   }));
+   var visibleLightObj = Phoria.Entity.create({
+      points: [{x:-3, y:4, z:-5}],
+      style: {
+         color: [255,255,255],
+         drawmode: "point",
+         shademode: "plain",
+         linewidth: 5,
+         linescale: 2
+      }
+   });
+   scene.graph.push(visibleLightObj);
+   var light = Phoria.PointLight.create({
+      color: [1, 0.4, 0],
+      position: {x:-3, y:4, z:-5},
+      intensity: 0.75,
+      attenuation: 0.05
+   });
+   visibleLightObj.children.push(light);
+   
+   var pause = false;
+   var fnAnimate = function() {
+      if (!pause)
+      {
+         // rotate local matrix of an object
+         sphere.rotateY(0.5*RADIANS);
+
+         // the light position is edited directly via the GUI - update the visible indicator
+         visibleLightObj.points[0].x = light.position.x;
+         visibleLightObj.points[0].y = light.position.y;
+         visibleLightObj.points[0].z = light.position.z;
+
+         // execute the model view 3D pipeline
+         scene.modelView();
+         // and render the scene
+         renderer.render(scene);
+      }
+      
+      requestAnimFrame(fnAnimate);
+   };
+   
+   // add GUI controls
+   var gui = new dat.GUI();
+   var f = gui.addFolder('Perspective');
+   f.add(scene.perspective, "fov").min(5).max(175);
+   f.add(scene.perspective, "near").min(1).max(100);
+   f.add(scene.perspective, "far").min(1).max(1000);
+   //f.open();
+   f = gui.addFolder('Camera LookAt');
+   f.add(scene.camera.lookat, "x").min(-100).max(100);
+   f.add(scene.camera.lookat, "y").min(-100).max(100);
+   f.add(scene.camera.lookat, "z").min(-100).max(100);
+   f = gui.addFolder('Camera Position');
+   f.add(scene.camera.position, "x").min(-100).max(100);
+   f.add(scene.camera.position, "y").min(-100).max(100);
+   f.add(scene.camera.position, "z").min(-100).max(100);
+   f.open();
+   f = gui.addFolder('Camera Up');
+   f.add(scene.camera.up, "x").min(-10).max(10).step(0.1);
+   f.add(scene.camera.up, "y").min(-10).max(10).step(0.1);
+   f.add(scene.camera.up, "z").min(-10).max(10).step(0.1);
+   f = gui.addFolder('Rendering');
+   f.add(sphere.style, "drawmode", ["point", "wireframe", "solid"]);
+   f.add(sphere.style, "shademode", ["plain", "lightsource"]);
+   f.add(sphere.style, "fillmode", ["fill", "filltwice", "inflate", "fillstroke", "hiddenline"]);
+   f.add(sphere.style, "doublesided");
+   f.open();
+   f = gui.addFolder('Light');
+   f.add(light.position, "x").min(-25).max(25).step(0.1);
+   f.add(light.position, "y").min(-25).max(25).step(0.1);
+   f.add(light.position, "z").min(-25).max(25).step(0.1);
+   f.add(light.color, "0").min(0).max(1).step(0.1).name("red");
+   f.add(light.color, "1").min(0).max(1).step(0.1).name("green");
+   f.add(light.color, "2").min(0).max(1).step(0.1).name("blue");
+   f.add(light, "intensity").min(0).max(1).step(0.1);
+   f.add(light, "attenuation").min(0.01).max(0.25).step(0.01);
+   f.open();
+
+   // key binding
+   document.addEventListener('keydown', function(e) {
+      switch (e.keyCode)
+      {
+         case 27:
+         {
+            pause = !pause;
+            break;
+         }
+      }
+   }, false);
+   
+   // start animation
+   requestAnimFrame(fnAnimate);
+}
+      </script>
+   </head>
+   
+   <body style="background-color: #bfbfbf">
+      <canvas id="canvas" width="768" height="512" style="background-color: #eee"></canvas>
+      <div><a style="color:#225588;text-decoration:none;" href="./index.html">&lt;&lt; Phoria demos</a></div>
+   </body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Phoria - Dev test page 2</title>
+      <script src="scripts/gl-matrix.js"></script>
+      <script src="scripts/phoria-util.js"></script>
+      <script src="scripts/phoria-entity.js"></script>
+      <script src="scripts/phoria-scene.js"></script>
+      <script src="scripts/phoria-renderer.js"></script>
+      <script src='scripts/dat.gui.min.js'></script>
+      <script>
+var requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+                       window.mozRequestAnimationFrame || window.msRequestAnimationFrame || 
+                       function(c) {window.setTimeout(c, 15)};
+/**
+   Phoria
+   pho·ri·a (fôr-)
+   n. The relative directions of the eyes during binocular fixation on a given object
+*/
+
+// bind to window onload event
+window.addEventListener('load', onloadHandler, false);
+
+function onloadHandler()
+{
+   // get the canvas DOM element and the 2D drawing context
+   var canvas = document.getElementById('canvas');
+   
+   // create the scene and setup camera, perspective and viewport
+   var scene = new Phoria.Scene();
+   scene.camera.position = {x:0.0, y:5.0, z:-15.0};
+   scene.perspective.aspect = canvas.width / canvas.height;
+   scene.viewport.width = canvas.width;
+   scene.viewport.height = canvas.height;
+   
+   // create a canvas renderer
+   var renderer = new Phoria.CanvasRenderer(canvas);
+   
+   // GENERATE TEST ENTITIES
+   // add a grid to help visualise camera position etc.
+   var plane = Phoria.Util.generateTesselatedPlane(16,16,0,20);
+   scene.graph.push(Phoria.Entity.create({
+      points: plane.points,
+      edges: plane.edges,
+      polygons: plane.polygons,
+      style: {
+         drawmode: "wireframe",
+         shademode: "plain",
+         linewidth: 0.5,
+         sortmode: "unsorted"
+      }
+   }));
+   var head = Phoria.Entity.create({
+      points: [{x:-0.975677,y:1.941183,z:-2.049427},{x:1.123181,y:1.941183,z:-2.089205},{x:-0.496590,y:3.265426,z:-2.765438},{x:2.218237,y:6.438094,z:-0.736740},{x:0.028124,y:6.741566,z:-0.776518},{x:-0.063130,y:4.562082,z:-2.924551},{x:-2.139175,y:5.638030,z:-0.657183},{x:0.895044,y:3.375780,z:-5.351034},{x:0.986299,y:4.424140,z:-5.072585},{x:-1.044119,y:4.396552,z:-5.112363},{x:2.606070,y:6.631213,z:1.212402},{x:-2.002293,y:5.775972,z:1.212402},{x:-1.911038,y:5.444911,z:3.599106},{x:-0.108758,y:6.051856,z:4.275339},{x:0.028124,y:6.769155,z:1.809078},{x:1.145995,y:1.113531,z:-1.333415},{x:0.415957,y:3.293015,z:-2.765438},{x:-0.998491,y:1.113531,z:-1.373194},{x:1.328504,y:0.065171,z:1.769300},{x:-0.040317,y:-0.100359,z:2.246641},{x:0.689721,y:-0.265889,z:3.439993},{x:-0.770354,y:-0.265889,z:3.439993},{x:-1.409137,y:0.065171,z:1.729522},{x:1.647895,y:6.300152,z:3.957112},{x:0.530025,y:-0.238301,z:0.456613},{x:0.849417,y:0.203113,z:-0.657182},{x:-0.747541,y:0.203113,z:-0.657182},{x:-0.519404,y:-0.238301,z:0.456613},{x:-0.907236,y:3.320603,z:-5.351034},{x:-0.040317,y:5.444911,z:-4.833914},{x:-0.565031,y:4.065491,z:-3.481449},{x:-0.565031,y:3.899960,z:-2.844995},{x:-0.496590,y:3.430957,z:-3.640563},{x:0.484398,y:3.927548,z:-2.805216},{x:0.415957,y:3.430957,z:-3.640563},{x:0.484398,y:4.065491,z:-3.481449},{x:-0.040317,y:4.727612,z:-3.362114},{x:-0.496590,y:-0.100359,z:4.076447},{x:0.393143,y:-0.100359,z:4.076447},{x:-0.063130,y:-0.017594,z:4.275339},{x:1.898846,y:3.568899,z:3.121765},{x:2.241051,y:4.506905,z:2.007970},{x:2.400747,y:2.768835,z:1.570408},{x:2.081355,y:1.223884,z:1.013510},{x:1.784778,y:1.637711,z:3.042209},{x:1.739150,y:0.837647,z:2.763760},{x:1.967287,y:2.492951,z:3.320657},{x:1.990101,y:3.017131,z:3.002430},{x:-2.344498,y:2.768835,z:1.530629},{x:-2.207616,y:4.065491,z:2.007970},{x:-2.002293,y:3.596488,z:3.121765},{x:-2.047920,y:2.520540,z:3.320657},{x:-1.888225,y:1.665299,z:3.042209},{x:-2.025107,y:1.223884,z:1.013510},{x:-1.865411,y:0.837647,z:2.723982},{x:-2.070734,y:3.044720,z:2.962652},{x:2.514815,y:4.065491,z:-0.418512},{x:2.149796,y:5.141438,z:1.610186},{x:-3.188604,y:4.148256,z:-1.134524},{x:2.355119,y:5.086262,z:-0.418512},{x:-3.211418,y:4.231021,z:1.610186},{x:-2.481380,y:3.706841,z:-0.458291},{x:1.670709,y:5.031085,z:3.161544},{x:-1.660088,y:4.534493,z:3.161544},{x:0.986299,y:3.651665,z:3.996890},{x:0.849417,y:1.085943,z:3.877555},{x:0.735348,y:1.389415,z:4.036669},{x:0.689721,y:0.506586,z:3.917334},{x:0.644094,y:0.810059,z:4.076447},{x:1.396945,y:2.906778,z:3.559328},{x:0.484398,y:1.968772,z:4.156004},{x:0.142193,y:3.320604,z:4.116226},{x:-0.063130,y:0.506586,z:4.156004},{x:-0.336895,y:0.810059,z:4.434453},{x:0.210634,y:0.810059,z:4.434453},{x:-0.040317,y:4.975908,z:3.917333},{x:-0.063130,y:1.361827,z:4.553788},{x:-1.066932,y:3.651665,z:3.996890},{x:-0.770354,y:0.506586,z:3.917334},{x:-0.610659,y:1.968772,z:4.156004},{x:-1.477578,y:2.906778,z:3.559328},{x:-0.268453,y:3.320604,z:4.116226},{x:-0.222826,y:2.023949,z:4.752680},{x:-0.063130,y:1.692888,z:4.354896},{x:-0.838795,y:1.389415,z:4.036669},{x:-1.682902,y:3.348192,z:3.439992},{x:-0.770354,y:0.782470,z:4.076447},{x:-0.040317,y:3.706841,z:4.235561},{x:-0.063130,y:1.058354,z:4.315117},{x:-0.952864,y:1.113531,z:3.877555},{x:0.096565,y:2.023949,z:4.752680},{x:1.625082,y:3.348192,z:3.479771},{x:2.423561,y:5.362146,z:1.451072},{x:1.670709,y:5.141438,z:3.797998},{x:-0.063130,y:5.141438,z:4.195782},{x:-2.937654,y:3.955137,z:1.888635},{x:-2.937654,y:3.679253,z:-1.015188},{x:2.583256,y:5.224204,z:-0.458291},{x:0.005311,y:5.334558,z:-3.242779}],
+      polygons: [{vertices:[21,20,38]},{vertices:[19,20,21]},{vertices:[24,19,27]},{vertices:[21,38,37]},{vertices:[18,20,19]},{vertices:[19,21,22]},{vertices:[19,22,27]},{vertices:[27,26,24]},{vertices:[18,19,24]},{vertices:[37,38,39]},{vertices:[27,22,26]},{vertices:[24,25,18]},{vertices:[24,26,25]},{vertices:[67,39,38]},{vertices:[78,37,39]},{vertices:[54,21,37]},{vertices:[38,20,45]},{vertices:[22,21,54]},{vertices:[45,20,18]},{vertices:[78,39,72]},{vertices:[67,72,39]},{vertices:[38,45,67]},{vertices:[54,37,78]},{vertices:[15,18,25]},{vertices:[22,17,26]},{vertices:[17,25,26]},{vertices:[78,72,86]},{vertices:[67,68,72]},{vertices:[78,86,54]},{vertices:[86,72,73]},{vertices:[45,18,43]},{vertices:[22,54,53]},{vertices:[67,45,68]},{vertices:[72,68,74]},{vertices:[72,74,73]},{vertices:[53,17,22]},{vertices:[17,15,25]},{vertices:[43,18,15]},{vertices:[73,74,88]},{vertices:[45,65,68]},{vertices:[54,86,89]},{vertices:[68,65,74]},{vertices:[86,73,89]},{vertices:[74,65,88]},{vertices:[88,89,73]},{vertices:[76,89,88]},{vertices:[65,76,88]},{vertices:[45,44,65]},{vertices:[54,89,52]},{vertices:[44,45,43]},{vertices:[53,54,52]},{vertices:[76,84,89]},{vertices:[65,66,76]},{vertices:[44,66,65]},{vertices:[0,15,17]},{vertices:[52,89,84]},{vertices:[43,15,1]},{vertices:[53,0,17]},{vertices:[66,83,76]},{vertices:[83,84,76]},{vertices:[0,1,15]},{vertices:[66,70,83]},{vertices:[83,79,84]},{vertices:[44,46,66]},{vertices:[52,84,51]},{vertices:[53,52,48]},{vertices:[44,43,42]},{vertices:[90,83,70]},{vertices:[82,79,83]},{vertices:[90,82,83]},{vertices:[46,70,66]},{vertices:[51,84,79]},{vertices:[61,0,53]},{vertices:[42,46,44]},{vertices:[48,52,51]},{vertices:[1,0,2]},{vertices:[1,56,43]},{vertices:[90,70,71]},{vertices:[82,81,79]},{vertices:[90,81,82]},{vertices:[46,69,70]},{vertices:[51,79,80]},{vertices:[48,61,53]},{vertices:[42,43,56]},{vertices:[80,79,81]},{vertices:[71,70,69]},{vertices:[42,47,46]},{vertices:[48,51,55]},{vertices:[47,69,46]},{vertices:[80,55,51]},{vertices:[2,16,1]},{vertices:[71,81,90]},{vertices:[2,0,61]},{vertices:[85,55,80]},{vertices:[47,91,69]},{vertices:[42,40,47]},{vertices:[16,56,1]},{vertices:[48,55,50]},{vertices:[80,81,85]},{vertices:[71,69,91]},{vertices:[40,91,47]},{vertices:[85,50,55]},{vertices:[16,2,32]},{vertices:[34,28,7]},{vertices:[34,32,28]},{vertices:[16,32,34]},{vertices:[71,91,64]},{vertices:[85,81,77]},{vertices:[71,87,81]},{vertices:[48,50,49]},{vertices:[49,61,48]},{vertices:[40,64,91]},{vertices:[85,77,50]},{vertices:[87,77,81]},{vertices:[33,16,34]},{vertices:[64,87,71]},{vertices:[2,30,32]},{vertices:[41,40,42]},{vertices:[61,31,2]},{vertices:[35,34,7]},{vertices:[7,28,9]},{vertices:[32,9,28]},{vertices:[2,31,30]},{vertices:[95,96,61]},{vertices:[42,56,41]},{vertices:[33,34,35]},{vertices:[95,61,49]},{vertices:[50,77,63]},{vertices:[35,7,8]},{vertices:[60,96,95]},{vertices:[32,30,9]},{vertices:[5,61,96]},{vertices:[60,58,96]},{vertices:[7,9,8]},{vertices:[49,50,63]},{vertices:[31,61,5]},{vertices:[62,64,40]},{vertices:[59,16,33]},{vertices:[64,75,87]},{vertices:[75,77,87]},{vertices:[58,5,96]},{vertices:[59,56,16]},{vertices:[49,63,95]},{vertices:[5,33,35]},{vertices:[31,36,30]},{vertices:[41,62,40]},{vertices:[75,63,77]},{vertices:[31,5,36]},{vertices:[36,35,8]},{vertices:[5,35,36]},{vertices:[60,95,12]},{vertices:[5,59,33]},{vertices:[62,75,64]},{vertices:[41,56,57]},{vertices:[95,63,12]},{vertices:[30,29,9]},{vertices:[58,98,5]},{vertices:[60,11,58]},{vertices:[30,36,29]},{vertices:[8,9,29]},{vertices:[59,57,56]},{vertices:[36,8,29]},{vertices:[75,94,63]},{vertices:[41,57,62]},{vertices:[97,59,5]},{vertices:[63,94,12]},{vertices:[93,75,62]},{vertices:[58,6,98]},{vertices:[98,97,5]},{vertices:[93,94,75]},{vertices:[60,12,11]},{vertices:[97,57,59]},{vertices:[62,57,92]},{vertices:[92,93,62]},{vertices:[58,11,6]},{vertices:[92,57,97]},{vertices:[23,94,93]},{vertices:[94,13,12]},{vertices:[98,3,97]},{vertices:[93,92,10]},{vertices:[97,10,92]},{vertices:[23,13,94]},{vertices:[6,4,98]},{vertices:[11,12,14]},{vertices:[10,23,93]},{vertices:[11,4,6]},{vertices:[14,12,13]},{vertices:[3,10,97]},{vertices:[4,3,98]},{vertices:[14,13,23]},{vertices:[11,14,4]},{vertices:[10,14,23]},{vertices:[4,10,3]},{vertices:[14,10,4]}],
+      style: {
+         color: [245,185,240],
+         drawmode: "solid",
+         fillmode: "inflate"
+      }
+   });
+   head.scaleN(0.75).translateY(-2);
+   scene.graph.push(head);
+   scene.graph.push(new Phoria.DistantLight());
+   
+   var fnAnimate = function() {
+      // rotate local matrix of an object
+      head.rotateY(0.5*RADIANS);
+      
+      // execute the model view 3D pipeline
+      scene.modelView();
+      
+      // and render the scene
+      renderer.render(scene);
+      
+      requestAnimFrame(fnAnimate);
+   };
+   
+   // add GUI controls
+   var gui = new dat.GUI();
+   var f = gui.addFolder('Perspective');
+   f.add(scene.perspective, "fov").min(5).max(175);
+   f.add(scene.perspective, "near").min(1).max(100);
+   f.add(scene.perspective, "far").min(1).max(1000);
+   //f.open();
+   f = gui.addFolder('Camera LookAt');
+   f.add(scene.camera.lookat, "x").min(-100).max(100);
+   f.add(scene.camera.lookat, "y").min(-100).max(100);
+   f.add(scene.camera.lookat, "z").min(-100).max(100);
+   f.open();
+   f = gui.addFolder('Camera Position');
+   f.add(scene.camera.position, "x").min(-100).max(100);
+   f.add(scene.camera.position, "y").min(-100).max(100);
+   f.add(scene.camera.position, "z").min(-100).max(100);
+   f.open();
+   f = gui.addFolder('Camera Up');
+   f.add(scene.camera.up, "x").min(-10).max(10).step(0.1);
+   f.add(scene.camera.up, "y").min(-10).max(10).step(0.1);
+   f.add(scene.camera.up, "z").min(-10).max(10).step(0.1);
+   f = gui.addFolder('Rendering');
+   f.add(head.style, "drawmode", ["point", "solid"]);
+   f.add(head.style, "shademode", ["plain", "lightsource"]);
+   f.add(head.style, "fillmode", ["fill", "filltwice", "inflate", "fillstroke", "hiddenline"]);
+   f.open();
+   
+   // start animation
+   requestAnimFrame(fnAnimate);
+}
+      </script>
+   </head>
+   
+   <body style="background-color: #bfbfbf">
+      <canvas id="canvas" width="768" height="512" style="background-color: #eee"></canvas>
+      <div><a style="color:#225588;text-decoration:none;" href="./index.html">&lt;&lt; Phoria demos</a></div>
+   </body>
+</html>

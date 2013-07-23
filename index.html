@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Phoria 3D</title>
+      <style type="text/css">
+@font-face
+{
+   font-family: HelveticaNeue;
+   src: url('HelveticaNeueLTStd-Lt.otf');
+}
+@font-face
+{
+   font-family: HelveticaNeueBold;
+   src: url('HelveticaNeueLTStd-Md.otf');
+}
+@font-face
+{
+   font-family: OstrichSans;
+   src: url('ostrich-black-webfont.woff');
+}
+body
+{
+   background-color: #fff;
+   font-family: HelveticaNeue, Helvetica;
+   color: #333;
+}
+.header
+{
+   margin: 20px;
+   background-color: #eee;
+   border-radius: 32px;
+   height: 18em;
+}
+P
+{
+   font-size: 1.2em;
+   padding-left: 20px;
+   padding-top: 0;
+   padding-bottom: 0;
+   line-height: 1em;
+}
+.inline
+{
+   display: inline-block;
+}
+.left
+{
+   float: left;
+}
+.title
+{
+   font-family: HelveticaNeue, Helvetica;
+   padding-left: 20px;
+   padding-top: 120px;
+   color: #000;
+   font-size: 1.75em;
+}
+.desc
+{
+   font-family: HelveticaNeueBold, Helvetica;
+   color: #333;
+   line-height: 1.75em;
+}
+canvas
+{
+   border: 1px solid #aaa;
+   background-color: #eee;
+   vertical-align: top;
+}
+.info > p
+{
+   line-height: 1.2em;
+}
+a, a:visited, a:active, a:hover
+{
+   color: #225588;
+   text-decoration: none;
+}
+a:hover
+{
+   text-decoration: underline;
+}
+.credits
+{
+   text-align: center;
+   font-size: 90%;
+}
+.button-overlay
+{
+   position: absolute;
+   right: 1em;
+}
+      </style>
+      <script src="scripts/phoria-min.js"></script>
+      <script async defer src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=xa-4e4813104686cad8"></script>
+      <script>
+var requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+                       window.mozRequestAnimationFrame || window.msRequestAnimationFrame || 
+                       function(c) {window.setTimeout(c, 15)};
+// bind to window onload event
+window.addEventListener('load', onloadHandler, false);
+
+function onloadHandler()
+{
+   // get the canvas DOM element and the 2D drawing context
+   var canvas = document.getElementById('canvas');
+   
+   // create the scene and setup camera, perspective and viewport
+   var scene = new Phoria.Scene();
+   scene.camera.position = {x:0.0, y:5.0, z:-15.0};
+   scene.perspective.aspect = canvas.width / canvas.height;
+   scene.viewport.width = canvas.width;
+   scene.viewport.height = canvas.height;
+   
+   // create a canvas renderer
+   var renderer = new Phoria.CanvasRenderer(canvas);
+   
+   // GENERATE TEST ENTITIES
+   // add a grid to help visualise camera position etc.
+   var plane = Phoria.Util.generateTesselatedPlane(16,16,0,20);
+   scene.graph.push(Phoria.Entity.create({
+      points: plane.points,
+      edges: plane.edges,
+      polygons: plane.polygons,
+      style: {
+         drawmode: "wireframe",
+         linewidth: 0.5,
+         sortmode: "unsorted"
+      }
+   }));
+   var cube = Phoria.Util.generateUnitCube(1);
+   var testCube = Phoria.Entity.create({
+      points: cube.points,
+      edges: cube.edges,
+      polygons: cube.polygons,
+      style: {
+         drawmode: "solid"
+      }
+   });
+   scene.graph.push(testCube);
+   cube = Phoria.Util.generateUnitCube(0.5);
+   var childCube = Phoria.Entity.create({
+      points: cube.points,
+      edges: cube.edges,
+      polygons: cube.polygons,
+      style: {
+         color: [0,0,0],
+         drawmode: "wireframe"
+      }
+   });
+   // add child object
+   testCube.children.push(childCube);
+
+   var blueLightObj = Phoria.Entity.create({
+      points: [{x:0, y:2, z:-5}],
+      style: {
+         color: [0,0,255],
+         drawmode: "point",
+         shademode: "plain",
+         linewidth: 5,
+         linescale: 2
+      }
+   });
+   scene.graph.push(blueLightObj);
+   var blueLight = Phoria.PointLight.create({
+      position: {x:0, y:2, z:-5},
+      color: [0,0,1]
+   });
+   blueLightObj.children.push(blueLight);
+
+   var redLightObj = Phoria.Entity.create({
+      points: [{x:0, y:2, z:5}],
+      style: {
+         color: [255,0,0],
+         drawmode: "point",
+         shademode: "plain",
+         linewidth: 5,
+         linescale: 2
+      }
+   });
+   scene.graph.push(redLightObj);
+   var redLight = Phoria.PointLight.create({
+      position: {x:0, y:2, z:5},
+      color: [1,0,0]
+   });
+   redLightObj.children.push(redLight);
+
+   var greenLightObj = Phoria.Entity.create({
+      points: [{x:0, y:2, z:5}],
+      style: {
+         color: [0,255,0],
+         drawmode: "point",
+         shademode: "plain",
+         linewidth: 5,
+         linescale: 2
+      }
+   });
+   scene.graph.push(greenLightObj);
+   var greenLight = Phoria.PointLight.create({
+      position: {x:0, y:2, z:5},
+      color: [0,1,0]
+   });
+   greenLightObj.children.push(greenLight);
+   
+   var rotates = [0,0,0];
+   var fnAnimate = function() {2
+      // rotate local matrix of an object
+      testCube.rotateY(0.5*RADIANS);
+      // translate local matrix of child object - will receive rotation from parent
+      childCube.identity().translateY(Math.sin(Date.now() / 1000) + 3);
+      // translate visible light objects around the origin - will rotate child Light emitters
+      var sine = Math.sin(Date.now() / 500);
+      blueLightObj.identity().rotateY(rotates[0]+=1*RADIANS).translateY(sine);
+      redLightObj.identity().rotateY(rotates[1]+=0.5*RADIANS).translateY(sine);
+      greenLightObj.identity().rotateY(rotates[2]+=1.5*RADIANS).translateY(sine);
+      
+      // execute the model view 3D pipeline
+      scene.modelView();
+      // and render the scene
+      renderer.render(scene);
+      
+      requestAnimFrame(fnAnimate);
+   };
+   requestAnimFrame(fnAnimate);
+}
+      </script>
+   </head>
+   
+   <body>
+      <div class="button-overlay">
+         <!-- AddThis Button BEGIN -->
+         <div class="addthis_toolbox addthis_default_style addthis_32x32_style">
+         <a class="addthis_button_preferred_1"></a>
+         <a class="addthis_button_preferred_2"></a>
+         <a class="addthis_button_compact"></a>
+         <a class="addthis_counter addthis_bubble_style"></a>
+         </div>
+         <!-- AddThis Button END -->
+      </div>
+      <div class="header">
+         <div class="left"><a href="."><img style="padding-left:20px" src="flower.png" width="214" height="263" alt="" border="0"></a></div>
+         <div style="margin-left:14em">
+            <p class="title">Phoria</p>
+            <p class="desc">pho&#x00B7;ri&#x00B7;a (f&#x00F4;r-)</p>
+            <p class="desc">n. The relative directions of the eyes during binocular fixation on a given object</p>
+         </div>
+      </div>
+      <div style="margin: 24px 20px">
+         <canvas id="canvas" width="384" height="256"></canvas>
+         <div class="inline" style="margin-left:20px">
+            <p><a href="test0.html">test 0 - basic cube on grid</a>
+            <p><a href="test0t.html">test 0t - textured cube</a>
+            <p><a href="test0k.html">test 0k - WASD and arrow keys move around scene</a>
+            <p><a href="test1.html">test 1 - animated point lights around a cube</a>
+            <p><a href="test2.html">test 2 - imported .obj file</a>
+            <p><a href="test3.html">test 3 - sphere with point lighting</a>
+            <p><a href="test3s.html">test 3s - software rendered triangles</a>
+            <p><a href="test3p.html">test 3p - lightsourced point sphere</a>
+            <p><a href="test3m.html">test 3m - material test with specular highlights</a>
+            <p><a href="test4g.html">test 4g - particle emitter with gravity</a>
+            <p><a href="test4p.html">test 4p - particles as point lights</a>
+            <p><a href="test4t.html">test 4t - sprite particles flame effect</a>
+         </div>
+         <div class="info">
+            <p><b>What's all this then?</b> - phoria.js is a JavaScript library for simple 3D graphics on a canvas 2D renderer. It does not use WebGL - so works on any device that can display HTML5 Canvas - so all modern browsers and including iOS and Android phones! It uses the excellent vector and matrix maths library <a href="http://glmatrix.net">gl-matrix.js</a>.</p>
+            <p><b>Can I play with it?</b> - Yes you can View Source on the various demo pages above and <a href="scripts/phoria.js">download the code</a> or the <a href="scripts/phoria-min.js">minified code</a>.</p>
+            <p><b>Is there any documentation?</b> - Not much. It's still in development and so you can assume it's changing a lot and there is no documentation beyond the well commented code and simple example pages.</p>
+            <p><b>This is cool, is there more?</b> - There's a bunch more fun HTML5 canvas demos and games to play <a href="../index.html">on my site</a>.</p>
+         </div>
+      </div>
+      <div class="credits">
+         Copyright (C) Kevin Roast 2013 - <a href="http://twitter.com/kevinroast" target="new">Follow me on Twitter</a> - Last updated: 15th July 2013.
+      </div>
+   </body>
+</html>2

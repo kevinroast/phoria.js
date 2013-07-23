@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Phoria - Dev test page 0</title>
+      <script src="scripts/gl-matrix.js"></script>
+      <script src="scripts/phoria-util.js"></script>
+      <script src="scripts/phoria-entity.js"></script>
+      <script src="scripts/phoria-scene.js"></script>
+      <script src="scripts/phoria-renderer.js"></script>
+      <script src='scripts/dat.gui.min.js'></script>
+      <script>
+var requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+                       window.mozRequestAnimationFrame || window.msRequestAnimationFrame || 
+                       function(c) {window.setTimeout(c, 15)};
+/**
+   Phoria
+   pho·ri·a (fôr-)
+   n. The relative directions of the eyes during binocular fixation on a given object
+*/
+
+// bind to window onload event
+window.addEventListener('load', onloadHandler, false);
+var bitmaps = [];
+function onloadHandler()
+{
+   // get the images loading
+   var loader = new Phoria.Preloader();
+   for (var i=0; i<6; i++)
+   {
+      bitmaps.push(new Image());
+      loader.addImage(bitmaps[i], 'images/texture'+i+'.png');
+   }
+   loader.onLoadCallback(init);
+}
+function init()
+{
+   // get the canvas DOM element and the 2D drawing context
+   var canvas = document.getElementById('canvas');
+   
+   // create the scene and setup camera, perspective and viewport
+   var scene = new Phoria.Scene();
+   scene.camera.position = {x:0.0, y:5.0, z:-15.0};
+   scene.perspective.aspect = canvas.width / canvas.height;
+   scene.viewport.width = canvas.width;
+   scene.viewport.height = canvas.height;
+   
+   // create a canvas renderer
+   var renderer = new Phoria.CanvasRenderer(canvas);
+   
+   // add a grid to help visualise camera position etc.
+   var plane = Phoria.Util.generateTesselatedPlane(8,8,0,20);
+   scene.graph.push(Phoria.Entity.create({
+      points: plane.points,
+      edges: plane.edges,
+      polygons: plane.polygons,
+      style: {
+         drawmode: "wireframe",
+         shademode: "plain",
+         linewidth: 0.5,
+         sortmode: "unsorted"
+      }
+   }));
+   var c = Phoria.Util.generateUnitCube();
+   var cube = Phoria.Entity.create({
+      points: c.points,
+      edges: c.edges,
+      polygons: c.polygons
+   });
+   for (var i=0; i<6; i++)
+   {
+      cube.textures.push(bitmaps[i]);
+      cube.polygons[i].texture = i;
+   }
+   scene.graph.push(cube);
+   scene.graph.push(Phoria.DistantLight.create({
+      direction: {x:0, y:-1.5, z:1}
+   }));
+
+   var pause = false;
+   var fnAnimate = function() {
+      if (!pause)
+      {
+         // rotate local matrix of the cube
+         cube.rotateY(0.5*RADIANS);
+         
+         // execute the model view 3D pipeline and render the scene
+         scene.modelView();
+         renderer.render(scene);
+      }
+      requestAnimFrame(fnAnimate);
+   };
+   
+   // keep track of heading to generate position
+   var heading = 0.0;
+   var lookAt = vec3.fromValues(0,-5,15);
+
+   /**
+    * @param forward {vec3}   Forward movement offset
+    * @param heading {float}  Heading in radians
+    * @param lookAt {vec3}    Lookat projection offset from updated position
+    */
+   var fnPositionLookAt = function positionLookAt(forward, heading, lookAt) {
+      // recalculate camera position based on heading and forward offset
+      var pos = vec3.fromValues(
+         scene.camera.position.x,
+         scene.camera.position.y,
+         scene.camera.position.z);
+      var ca = Math.cos(heading), sa = Math.sin(heading);
+      var rx = forward[0]*ca - forward[2]*sa,
+          rz = forward[0]*sa + forward[2]*ca;
+      forward[0] = rx;
+      forward[2] = rz;
+      vec3.add(pos, pos, forward);
+      scene.camera.position.x = pos[0];
+      scene.camera.position.y = pos[1];
+      scene.camera.position.z = pos[2];
+
+      // calcuate rotation based on heading - apply to lookAt offset vector
+      rx = lookAt[0]*ca - lookAt[2]*sa,
+      rz = lookAt[0]*sa + lookAt[2]*ca;
+      vec3.add(pos, pos, vec3.fromValues(rx, lookAt[1], rz));
+
+      // set new camera look at
+      scene.camera.lookat.x = pos[0];
+      scene.camera.lookat.y = pos[1];
+      scene.camera.lookat.z = pos[2];
+   }
+   
+   // key binding
+   document.addEventListener('keydown', function(e) {
+      switch (e.keyCode)
+      {
+         case 27: // ESC
+            pause = !pause;
+            break;
+         case 87: // W
+            // move forward along current heading
+            fnPositionLookAt(vec3.fromValues(0,0,1), heading, lookAt);
+            break;
+         case 83: // S
+            // move back along current heading
+            fnPositionLookAt(vec3.fromValues(0,0,-1), heading, lookAt);
+            break;
+         case 65: // A
+            // strafe left from current heading
+            fnPositionLookAt(vec3.fromValues(-1,0,0), heading, lookAt);
+            break;
+         case 68: // D
+            // strafe right from current heading
+            fnPositionLookAt(vec3.fromValues(1,0,0), heading, lookAt);
+            break;
+         case 37: // LEFT
+            // turn left
+            heading += RADIANS*4;
+            // recalculate lookAt
+            // given current camera position, project a lookAt vector along current heading for N units
+            fnPositionLookAt(vec3.fromValues(0,0,0), heading, lookAt);
+            break;
+         case 39: // RIGHT
+            // turn right
+            heading -= RADIANS*4;
+            // recalculate lookAt
+            // given current camera position, project a lookAt vector along current heading for N units
+            fnPositionLookAt(vec3.fromValues(0,0,0), heading, lookAt);
+            break;
+         case 38: // UP
+            lookAt[1]++;
+            fnPositionLookAt(vec3.fromValues(0,0,0), heading, lookAt);
+            break;
+         case 40: // DOWN
+            lookAt[1]--;
+            fnPositionLookAt(vec3.fromValues(0,0,0), heading, lookAt);
+            break;
+      }
+   }, false);
+
+   /*
+   KEY:
+   {
+      SHIFT:16, CTRL:17, ESC:27, RIGHT:39, UP:38, LEFT:37, DOWN:40, SPACE:32,
+      A:65, E:69, G:71, L:76, P:80, R:82, S:83, Z:90
+   },
+   */
+
+   // add GUI controls
+   var gui = new dat.GUI();
+   var f = gui.addFolder('Perspective');
+   f.add(scene.perspective, "fov").min(5).max(175);
+   f.add(scene.perspective, "near").min(1).max(100);
+   f.add(scene.perspective, "far").min(1).max(1000);
+   f = gui.addFolder('Camera LookAt');
+   f.add(scene.camera.lookat, "x").min(-100).max(100);
+   f.add(scene.camera.lookat, "y").min(-100).max(100);
+   f.add(scene.camera.lookat, "z").min(-100).max(100);
+   f = gui.addFolder('Camera Position');
+   f.add(scene.camera.position, "x").min(-100).max(100);
+   f.add(scene.camera.position, "y").min(-100).max(100);
+   f.add(scene.camera.position, "z").min(-100).max(100);
+   f = gui.addFolder('Camera Up');
+   f.add(scene.camera.up, "x").min(-10).max(10).step(0.1);
+   f.add(scene.camera.up, "y").min(-10).max(10).step(0.1);
+   f.add(scene.camera.up, "z").min(-10).max(10).step(0.1);
+
+   // start animation
+   requestAnimFrame(fnAnimate);
+}
+      </script>
+   </head>
+   
+   <body style="background-color: #bfbfbf">
+      <canvas id="canvas" width="768" height="512" style="background-color: #eee"></canvas>
+      <div><a style="color:#225588;text-decoration:none;" href="./index.html">&lt;&lt; Phoria demos</a></div>
+   </body>
+</html>
