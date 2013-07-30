@@ -274,9 +274,7 @@ if (typeof Phoria === "undefined" || !Phoria)
          {
             avz += worldcoords[ verts[n] ][2];
          }*/
-         // NOTE: only taking average of first and third vertex Z - cheeky but much faster than above loop
-         // TODO: make this an option rather than the default...?
-         polygons[i]._avz = (worldcoords[ verts[0] ][2] + worldcoords[ verts[2] ][2]) * 0.5;
+         polygons[i]._avz = (worldcoords[ verts[0] ][2] + worldcoords[ verts[1] ][2] + worldcoords[ verts[2] ][2]) * 0.333333;
       }
       polygons.sort(function sortPolygonsZ(f1, f2) {
          return (f1._avz < f2._avz ? -1 : 1);
