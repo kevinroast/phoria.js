@@ -1,5 +1,5 @@
 /**
- * @fileoverview phoria - Scene renderers. Canvas renderer and Software renderer.
+ * @fileoverview phoria - Scene renderers. Canvas renderer and prototype Software renderer.
  * @author Kevin Roast
  * @date 14th April 2013
  */
@@ -277,7 +277,8 @@
 
    /**
     * CanvasRenderer will output the scene onto the supplied canvas context using the 2D drawing context. Standard canvas
-    * 2D operations such as drawing arcs, lines and filled shapes will be used to render the 3D entities.
+    * 2D operations such as drawing arcs, lines and filled shapes will be used to render the 3D entities. A lot of the rendering
+    * techniques are based on the work done in my first JavaScript 3D library 'K3D' see bit.ly/canvask3d
     */
    Phoria.CanvasRenderer = function(canvas)
    {
@@ -682,7 +683,10 @@
    "use strict";
 
    /**
-    * Object constructor
+    * Software renderer is based on the work by mr.doob which in turn is based on the work here:
+    * http://devmaster.net/forums/topic/1145-advanced-rasterization/
+    * For lots of small polygons in a very fast JavaScript VM (V8 on Chrome) then it can be faster than
+    * standard canvas poly drawing - but does not have anti-aliasing and is notably slower for large polygons.
     */
    Phoria.SoftwareRenderer = function(canvas)
    {

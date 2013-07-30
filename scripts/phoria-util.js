@@ -188,6 +188,9 @@ if (typeof Phoria === "undefined" || !Phoria)
       return dst;
    }
    
+   /**
+    * Return true if the given mat4 is an identity (noop) matrix, false otherwise
+    */
    Phoria.Util.isIdentity = function isIdentity(mat)
    {
       return (
@@ -264,7 +267,6 @@ if (typeof Phoria === "undefined" || !Phoria)
     */
    Phoria.Util.sortPolygons = function sortPolygons(polygons, worldcoords)
    {
-      // TODO: try taking Z of first vertex - don't bother calculating average?
       for (var i=0,verts; i<polygons.length; i++)
       {
          verts = polygons[i].vertices;
@@ -272,7 +274,8 @@ if (typeof Phoria === "undefined" || !Phoria)
          {
             avz += worldcoords[ verts[n] ][2];
          }*/
-         // average of first and third vertex Z - cheeky but much faster than above loop
+         // NOTE: only taking average of first and third vertex Z - cheeky but much faster than above loop
+         // TODO: make this an option rather than the default...?
          polygons[i]._avz = (worldcoords[ verts[0] ][2] + worldcoords[ verts[2] ][2]) * 0.5;
       }
       polygons.sort(function sortPolygonsZ(f1, f2) {

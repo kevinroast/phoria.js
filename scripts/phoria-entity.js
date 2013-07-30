@@ -596,7 +596,8 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
     */
    Phoria.EmitterEntity.create = function(desc)
    {
-      // TODO: provide an emitter() function - which sets velocity onto the particle?
+      // TODO: provide an emitter() callback function - which could be used to apply velocity or whatever
+      //       rather than assuming all particle generation will use the parameters below
       // merge structures to generate entity
       var e = new Phoria.EmitterEntity();
       Phoria.BaseEntity.create(desc, e);
