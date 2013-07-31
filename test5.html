@@ -126,7 +126,7 @@ function init()
       onParticle: function (p) {
          // style references the parent emitter config - so clone a new one and modify it
          p.style = Phoria.Util.clone(p.style);
-         p.style.linewidth = 16 + (Math.random()*12 - 6);
+         p.style.linewidth = 12 + (Math.random()*8 - 4);
       },
       onScene: function()
       {
@@ -136,13 +136,11 @@ function init()
             p = this.children[i];
             if (p._worldcoords && p._worldcoords[0][0] > 10)
             {
-               //console.log("x:" + p._worldcoords[0][0] + " y:" + p._worldcoords[0][1] + " z:" + p._worldcoords[0][2]);
-               
                // apply decal to the texture used by the wall - map particle coordinate to a texture coordinate on the plane
 
                // - the texture size is a hack due to perspectice scaling etc. that
                // is applied to the linewidth during rendering of the particle sprite
-               var size = p.style.linewidth*3;
+               var size = p.style.linewidth<<2;
                
                // calc the offset given the texture image size and knowing that; the plane is size 10 units centred on Z axis
                // and the position of the particle is the centre point of the blob image, then invert the offset as

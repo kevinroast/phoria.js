@@ -398,7 +398,7 @@
          if (obj.style.linescale !== 0)
          {
             // use the perspective divisor to calculate line width scaling
-            w = (obj.style.linewidth * obj.style.linescale) / ((obj._coords[index][3]) / (scene.viewport.width >> 6));
+            w = ((obj.style.linewidth * obj.style.linescale) / obj._coords[index][3]) * scene._perspectiveScale;
          }
 
          switch (obj.style.shademode)
@@ -445,7 +445,7 @@
          if (obj.style.linescale !== 0)
          {
             // use the perspective divisor to calculate line width scaling
-            ctx.lineWidth = (obj.style.linewidth * obj.style.linescale) / (((obj._coords[edge.a][3] + obj._coords[edge.b][3]) * 0.5) / (scene.viewport.width >> 6));
+            ctx.lineWidth = ((obj.style.linewidth * obj.style.linescale) / ((obj._coords[edge.a][3] + obj._coords[edge.b][3]) * 0.5)) * scene._perspectiveScale;
          }
 
          // lighting calc

@@ -270,11 +270,14 @@ if (typeof Phoria === "undefined" || !Phoria)
       for (var i=0,verts; i<polygons.length; i++)
       {
          verts = polygons[i].vertices;
-         /*for (var n=0; n<verts.length; n++)
+         if (verts.length === 3)
          {
-            avz += worldcoords[ verts[n] ][2];
-         }*/
-         polygons[i]._avz = (worldcoords[ verts[0] ][2] + worldcoords[ verts[1] ][2] + worldcoords[ verts[2] ][2]) * 0.333333;
+            polygons[i]._avz = (worldcoords[ verts[0] ][2] + worldcoords[ verts[1] ][2] + worldcoords[ verts[2] ][2]) * 0.333333;
+         }
+         else
+         {
+            polygons[i]._avz = (worldcoords[ verts[0] ][2] + worldcoords[ verts[1] ][2] + worldcoords[ verts[2] ][2] + worldcoords[ verts[3] ][2]) * 0.25;
+         }
       }
       polygons.sort(function sortPolygonsZ(f1, f2) {
          return (f1._avz < f2._avz ? -1 : 1);

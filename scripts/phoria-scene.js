@@ -111,6 +111,7 @@
       
       _lastTime: 0,
       _cameraPosition: null,
+      _perspectiveScale: 0.0,
       
       onCameraHandlers: null,
       
@@ -183,6 +184,8 @@
             this.perspective.aspect,
             this.perspective.near,
             this.perspective.far);
+         // scaling factor used when rendering points to account for perspective fov
+         this._perspectiveScale = (256 - this.perspective.fov) / 16;
          
          // hook point to allow processing of the camera and perspective matrices before they are applied
          // e.g. mat4.rotate(camera, camera, Math.sin(Date.now()/10000)*RADIANS*360, vec3.fromValues(0,1,0));
