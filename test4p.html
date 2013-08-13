@@ -34,8 +34,10 @@ function onloadHandler()
    scene.perspective.aspect = canvas.width / canvas.height;
    scene.viewport.width = canvas.width;
    scene.viewport.height = canvas.height;
-   scene.onCamera(function(camera, perspective) {
-      mat4.rotate(camera, camera, Math.sin(Date.now()/10000)*RADIANS*360, vec3.fromValues(0,1,0));
+   scene.onCamera(function(position, lookAt, up) {
+      var rotMatrix = mat4.create();
+      mat4.rotateY(rotMatrix, rotMatrix, Math.sin(Date.now()/10000)*RADIANS*360);
+      vec4.transformMat4(position, position, rotMatrix);
    });
    
    // create a canvas renderer

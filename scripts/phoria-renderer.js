@@ -310,7 +310,7 @@
          var ctx = this.ctx;
          if (!fnClear)
          {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
          }
          else
          {

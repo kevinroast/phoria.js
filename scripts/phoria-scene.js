@@ -118,7 +118,7 @@
       /**
        * Add an onCamera event handler function to the entity
        * 
-       * @param fn {function}    onCamera handler signature: function(camera, perspective) this = scene
+       * @param fn {function}    onCamera handler signature: function(position, lookAt, up) this = scene
        */
       onCamera: function onCamera(fn)
       {
@@ -157,24 +157,41 @@
              vpw = this.viewport.width * 0.5,
              vph = this.viewport.height * 0.5;
          
-         // calculate camera matrix for our scene
-         var camera = mat4.create();
-         // store current camera position as vec3 - useful for specular lighting calculations later
-         this._cameraPosition = vec3.fromValues(
+         // store current camera position as vec4 - useful for specular lighting calculations later
+         this._cameraPosition = vec4.fromValues(
             this.camera.position.x,
             this.camera.position.y,
-            this.camera.position.z);
+            this.camera.position.z,
+            0);
+         var camera = mat4.create(),
+             cameraLookat = vec4.fromValues(
+               this.camera.lookat.x,
+               this.camera.lookat.y,
+               this.camera.lookat.z,
+               0),
+             cameraUp = vec4.fromValues(
+               this.camera.up.x,
+               this.camera.up.y,
+               this.camera.up.z,
+               0);
+         
+         // hook point to allow processing of the camera vectors before they are applied to the lookAt matrix
+         // e.g. rotate the camera position around an axis
+         // another way to do this would be to perform this step manually at the start of an animation loop
+         if (this.onCameraHandlers !== null)
+         {
+            for (var h in this.onCameraHandlers)
+            {
+               this.onCameraHandlers[h].call(this, this._cameraPosition, cameraLookat, cameraUp);
+            }
+         }
+
+         // generate the lookAt matrix
          mat4.lookAt(
             camera,
             this._cameraPosition,
-            vec3.fromValues(
-               this.camera.lookat.x,
-               this.camera.lookat.y,
-               this.camera.lookat.z),
-            vec3.fromValues(
-               this.camera.up.x,
-               this.camera.up.y,
-               this.camera.up.z));
+            cameraLookat,
+            cameraUp);
          
          // calculate perspective matrix for our scene
          var perspective = mat4.create();
@@ -187,16 +204,6 @@
          // scaling factor used when rendering points to account for perspective fov
          this._perspectiveScale = (256 - this.perspective.fov) / 16;
          
-         // hook point to allow processing of the camera and perspective matrices before they are applied
-         // e.g. mat4.rotate(camera, camera, Math.sin(Date.now()/10000)*RADIANS*360, vec3.fromValues(0,1,0));
-         if (this.onCameraHandlers !== null)
-         {
-            for (var h in this.onCameraHandlers)
-            {
-               this.onCameraHandlers[h].call(this, camera, perspective);
-            }
-         }
-
          // process each object in the scene graph
          // and recursively process each child entity (against parent local matrix)
          var renderlist = [],
