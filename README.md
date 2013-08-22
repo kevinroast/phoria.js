@@ -34,3 +34,5 @@ http://www.kevs3d.co.uk/dev/phoria/test4p.html - test 4p - particles as point li
 http://www.kevs3d.co.uk/dev/phoria/test4t.html - test 4t - sprite particles flame effect
 
 http://www.kevs3d.co.uk/dev/phoria/test5.html - test 5 - dynamic texturing - paint gun
+
+http://www.kevs3d.co.uk/dev/phoria/test6.html - test 6 - data visualisation - graph
