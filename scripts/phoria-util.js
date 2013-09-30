@@ -484,6 +484,26 @@ if (typeof Phoria === "undefined" || !Phoria)
       };
    }
 
+   /**
+    * Generate an Image for a radial gradient, with the given inner and outer colour stops.
+    * Useful to generate quick sprite images of blurred spheres for explosions, particles etc.
+    */
+   Phoria.Util.generateRadialGradientBitmap = function generateRadialGradientBitmap(size, innerColour, outerColour)
+   {
+      var buffer = document.createElement('canvas'),
+          width = size << 1;
+      buffer.width = buffer.height = width;
+      var ctx = buffer.getContext('2d'),
+          radgrad = ctx.createRadialGradient(size, size, size >> 1, size, size, size);  
+      radgrad.addColorStop(0, innerColour);
+      radgrad.addColorStop(1, outerColour);
+      ctx.fillStyle = radgrad;
+      ctx.fillRect(0, 0, width, width);
+      var img = new Image();
+      img.src = buffer.toDataURL("image/png");
+      return img;
+   }
+
 })();
 
 

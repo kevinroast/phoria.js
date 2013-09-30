@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Phoria - Dev test page 7</title>
+      <script src="scripts/gl-matrix.js"></script>
+      <script src="scripts/phoria-util.js"></script>
+      <script src="scripts/phoria-entity.js"></script>
+      <script src="scripts/phoria-scene.js"></script>
+      <script src="scripts/phoria-renderer.js"></script>
+      <script src='scripts/dat.gui.min.js'></script>
+      <script>
+var requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+                       window.mozRequestAnimationFrame || window.msRequestAnimationFrame || 
+                       function(c) {window.setTimeout(c, 15)};
+/**
+   Phoria
+   pho·ri·a (fôr-)
+   n. The relative directions of the eyes during binocular fixation on a given object
+*/
+
+// bind to window onload event
+window.addEventListener('load', onloadHandler, false);
+
+var bitmaps = [];
+function onloadHandler()
+{
+   // get the canvas DOM element and the 2D drawing context
+   var canvas = document.getElementById('canvas');
+   
+   // create the scene and setup camera, perspective and viewport
+   var scene = new Phoria.Scene();
+   scene.camera.position = {x:-150, y:15.0, z:-25.0};
+   scene.camera.lookat = {x:0.0, y:2.0, z:0.0};
+   scene.perspective.aspect = canvas.width / canvas.height;
+   scene.viewport.width = canvas.width;
+   scene.viewport.height = canvas.height;
+   
+   // create a canvas renderer
+   var renderer = new Phoria.CanvasRenderer(canvas);
+   
+   // add a big grid to help visualise camera position etc.
+   var plane = Phoria.Util.generateTesselatedPlane(20,20,0,500);
+   scene.graph.push(Phoria.Entity.create({
+      points: plane.points,
+      edges: plane.edges,
+      style: {
+         drawmode: "wireframe",
+         shademode: "plain",
+         linewidth: 0.5,
+         sortmode: "unsorted"
+      }
+   }));
+   scene.graph.push(new Phoria.DistantLight());
+   
+   // particle emitter
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(32, "rgba(128,64,32,1)", "rgba(128,64,32,0)"));
+   var emitter = Phoria.EmitterEntity.create({
+      positionRnd: {x:0, y:0.15, z:0},
+      rate: 75,
+      velocity: {x:-0.15, y:0, z:0},
+      velocityRnd: {x:0.05, y:0, z:0},
+      lifetime: 1000,
+      lifetimeRnd: 500,
+      gravity: false,
+      style: {
+         compositeOperation: "lighter",
+         shademode: "sprite",
+         linewidth: 16,
+         sprite: bitmaps[0]
+      }
+   });
+   // start over to the left, and move along the X axis
+   emitter.translateX(-200);
+   var emitterVel = [0.5,0,0];
+   emitter.onScene(function() {
+      this.translate(emitterVel);
+   });
+   scene.graph.push(emitter);
+
+   // camera track the emitter object position
+   scene.onCamera(function(position, lookAt, up) {
+      if (emitter.worldposition)
+      {
+         lookAt[0] = emitter.worldposition[0];
+         lookAt[1] = emitter.worldposition[1];
+         lookAt[2] = emitter.worldposition[2];
+      }
+   });
+
+   // triggers for camera animation etc.
+   scene.triggerHandlers.push({
+      trigger: function() {
+         // once emitter goes past us, move camera above the object and track along with it
+         if (emitter.worldposition[0] > -50) {
+            scene.camera.position.x = emitter.worldposition[0];
+            scene.camera.position.y = 30;
+            scene.camera.position.z = -15;
+         }
+         // emitter goes up when it passes a certain point
+         if (emitter.worldposition[0] > 150) {
+            // tween the velocity x/y of the object (and the particle output velocity)
+            if (emitterVel[1] < 0.5)
+            {
+               emitter.velocity.x += 0.003;
+               emitter.velocity.y -= 0.003;
+               emitterVel[0] -= 0.01;
+               emitterVel[1] += 0.01;
+            }
+            else
+            {
+               // once the velocity is fully set, start the next trigger
+               scene.triggerHandlers.push({
+                  trigger: function() {
+                     // once it is high enough, blow it up!
+                     if (emitter.worldposition[1] > 100) {
+                        emitter.velocity = {x:0, y:0, z:0};
+                        emitter.velocityRnd = {x:1, y:1, z:1};
+                        emitter.gravity = true;
+                        emitter.rate = 500;
+                        emitter.style.linewidth = 32;
+                        emitterVel = [0,0,0];
+                        var time = Date.now();
+                        scene.triggerHandlers.push({
+                           trigger: function() {
+                              // end the explosion after a few ms
+                              if (Date.now() > time + 300)
+                              {
+                                 emitter.rate = 0;
+                                 return true;
+                              }
+                           }
+                        });
+                        return true;
+                     }
+                  }
+               });
+               return true;
+            }
+         }
+      }
+   });
+
+   var pause = false;
+   var fnAnimate = function() {
+      if (!pause)
+      {
+         // execute the model view 3D pipeline and render the scene
+         scene.modelView();
+         renderer.render(scene);
+      }
+      requestAnimFrame(fnAnimate);
+   };
+
+   // key binding
+   document.addEventListener('keydown', function(e) {
+      switch (e.keyCode)
+      {
+         case 27:
+            if (pause) scene._lastTime = Date.now();
+            pause = !pause;
+            break;
+      }
+   }, false);
+   
+   // add GUI controls
+   var gui = new dat.GUI();
+   var f = gui.addFolder('Perspective');
+   f.add(scene.perspective, "fov").min(5).max(175);
+   f.add(scene.perspective, "near").min(1).max(100);
+   f.add(scene.perspective, "far").min(1).max(1000);
+   f = gui.addFolder('Camera LookAt');
+   f.add(scene.camera.lookat, "x").min(-100).max(100);
+   f.add(scene.camera.lookat, "y").min(-100).max(100);
+   f.add(scene.camera.lookat, "z").min(-100).max(100);
+   f = gui.addFolder('Camera Position');
+   f.add(scene.camera.position, "x").min(-100).max(100);
+   f.add(scene.camera.position, "y").min(-100).max(100);
+   f.add(scene.camera.position, "z").min(-100).max(100);
+   f = gui.addFolder('Camera Up');
+   f.add(scene.camera.up, "x").min(-10).max(10).step(0.1);
+   f.add(scene.camera.up, "y").min(-10).max(10).step(0.1);
+   f.add(scene.camera.up, "z").min(-10).max(10).step(0.1);
+   
+   // start animation
+   requestAnimFrame(fnAnimate);
+}
+      </script>
+   </head>
+   
+   <body style="background-color: #bfbfbf">
+      <canvas id="canvas" width="768" height="512" style="background-color: #eee"></canvas>
+      <div><a style="color:#225588;text-decoration:none;" href="./index.html">&lt;&lt; Phoria demos</a></div>
+   </body>
+</html>

@@ -49,6 +49,7 @@
       };
       
       this.graph = [];
+      this.triggerHandlers = [];
 
       return this;
    };
@@ -74,7 +75,7 @@
     *       height: 1024
     *    },
     *    graph: [...],
-    *    onCamera: function() {...}
+    *    onCamera: function() {...} << or [] of function defs
     */
    Phoria.Scene.create = function(desc)
    {
@@ -87,6 +88,134 @@
       if (desc.onCamera) s.onCamera(desc.onCamera);
       
       return s;
+   };
+
+   /**
+    * Deserialise a scene instance from a JSON structure. All phoria.js scene and child entity objects can be
+    * represented as a straight conversion from JSON to JavaScript - the only caveat being event handler function
+    * definitions (such as onScene, onCamera, onParticle etc.) are serialised as string values. This helper will
+    * walk the resulting entity structure looking for those methods and eval() them into runtime functions.
+    * 
+    * @param json    JSON string containing a serialised scene description.
+    * @return Phoria.Scene
+    * @throws Error on failure to parse scene or failure to eval runtime functions
+    * 
+    * TODO: Unfinished!
+    */
+   Phoria.Scene.createFromJSON = function(json)
+   {
+      var scene = null;
+
+      // the object version of the parsed JSON is still just a set of basic JS object literals
+      // we need to construct the Phoria objects that represent the scene and entities in the scene graph
+      // each entity needs to be processed recursively to ensure all children are constructed also
+      var jscene = JSON.parse(json);
+      if (jscene)
+      {
+         // found a scene object
+         // firstly, convert any event handler serialised functions to runtime functions
+
+         // now construct Phoria.Scene
+         //scene = 
+         /*if (jscene.onCamera instanceof string)
+         {
+            jscene.onCamera = eval(jscene.onCamera)
+         }*/
+         if (jscene.graph)
+         {
+            var fnProcessEntities = function(entities) {
+               for (var i = 0, e; i < entities.length; i++)
+               {
+                  e = entities[i];
+
+                  // iterate property names
+                  for (var p in e)
+                  {
+                     if (e.hasOwnProperty(p))
+                     {
+                        // if property name matches with "on*" it's an event handler (or list of) by convention
+                        // TODO: support array of event handler functions in object structure
+                        //       the various Phoria Entity objects now support function or array of function passed to on event
+                        if (p.indexOf("on") === 0 && (e[p] instanceof string || e[p] instanceof Array))
+                        {
+                           try
+                           {
+                              // TODO: convert string to function or array of strings to array of functions
+                           }
+                           catch (error)
+                           {
+                              console.log("Failed to convert expected event handler to function: " + p + "=" + e[p]);
+                              throw error;
+                           }
+                        }
+                        if (p === "children" && e[p] instanceof Array)
+                        {
+                           fnProcessEntities(e[p]);
+                        }
+                     }
+                  }
+
+                  // TODO: construct our Phoria entity from the object structure
+               }
+            };
+            fnProcessEntities(jscene.graph);
+         }
+      }
+
+      return scene;
+   };
+
+   /**
+    * TODO: Unfinished!
+    */
+   Phoria.Scene.toJSON = function(scene)
+   {
+      /*if (scene.onCamera)
+      {
+         scene.onCamera = scene.onCamera.toString();
+      }*/
+      if (scene.graph)
+      {
+         var fnProcessEntities = function(entities) {
+            for (var i = 0, e; i < entities.length; i++)
+            {
+               e = entities[i];
+               // iterate property names
+               for (var p in e)
+               {
+                  if (e.hasOwnProperty(p))
+                  {
+                     // if property name matches "on*Handlers" it is an event handler function list by convention
+
+                     // TODO: whoops! the *add* event handler methods are called "on..."! e.g. onCamera on a live scene - rename??? or not serialise???
+                     // if not serialise, probably still enough for good debug dump... - also could have "debug" flag that *Does* output private props?
+
+                     /*if (p.indexOf("on") === 0 && typeof e[p] === "function")
+                     {
+                        e[p] = e[p].toString();
+                     }*/
+
+                     // TODO: modify all Phoria entity classes to correctly mark private vars with "_"
+
+                     if (p.indexOf("_") === 0)
+                     {
+                        // remove private property/function before serialisation
+                        delete e[p];
+                     }
+                     if (p === "children" && e[p] instanceof Array)
+                     {
+                        fnProcessEntities(e[p]);
+                     }
+                  }
+               }
+
+               // TODO: need to serialise the Entity type into the object structure
+            }
+         };
+         fnProcessEntities(scene.graph);
+      }
+
+      return JSON.stringify(scene);
    };
    
    Phoria.Scene.prototype = {
@@ -109,21 +238,27 @@
       // {Array} the light entities that were found when processing the scene graph - set by modelView()
       lights: null,
       
+      // {Array} list of objects containing an "evaluator" function that is executed once per frame
+      // Each trigger can affect the scene at runtime and if needed expire the event handler from the list or
+      // add new trigger(s) with additional logic to continue a sequence of triggers and events.
+      triggerHandlers: null,
+      
+      onCameraHandlers: null,
+
       _lastTime: 0,
       _cameraPosition: null,
       _perspectiveScale: 0.0,
-      
-      onCameraHandlers: null,
-      
+
       /**
        * Add an onCamera event handler function to the entity
        * 
-       * @param fn {function}    onCamera handler signature: function(position, lookAt, up) this = scene
+       * @param fn {function}    onCamera handler signature: function(position, lookAt, up) this = scene,
+       *                         accepts [] of functions also
        */
       onCamera: function onCamera(fn)
       {
          if (this.onCameraHandlers === null) this.onCameraHandlers = [];
-         this.onCameraHandlers.push(fn);
+         this.onCameraHandlers = this.onCameraHandlers.concat(fn);
       },
       
       /**
@@ -371,8 +506,22 @@
          };
          fnProcessEntities.call(this, this.graph);
 
+         // set the public references to the flattened list of objects to render and the list of lights
          this.renderlist = renderlist;
          this.lights = lights;
+
+         // Process the scene trigger functions - this allows for real-time modification of the scene
+         // based on a supplied handler function - a sequence of these triggers can nest and add new
+         // triggers causing a sequence of events to perform chained actions to the scene as it executes.
+         // Uses a standard for loop to allow for modifications to the list during event processing.
+         for (var t=0; t<this.triggerHandlers.length; t++)
+         {
+            // trigger handlers return true if they are finished i.e. no longer needed in the scene
+            if (this.triggerHandlers[t].trigger.call(this, this._cameraPosition, cameraLookat, cameraUp))
+            {
+               this.triggerHandlers.splice(t, 1);
+            }
+         }
       }
    };
 })();

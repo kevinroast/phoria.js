@@ -53,13 +53,13 @@
       /**
        * Add an onScene event handler function to the entity. Called at the start of each scene processing cycle.
        * 
-       * @param fn {function}    onScene handler signature:
-       *        function(Phoria.Scene, time) this = Phoria.Entity
+       * @param fn {function}    onScene handler signature: function(Phoria.Scene, time) this = Phoria.Entity,
+       *                         accepts [] of functions also
        */
       onScene: function onScene(fn)
       {
          if (this.onSceneHandlers === null) this.onSceneHandlers = [];
-         this.onSceneHandlers.push(fn);
+         this.onSceneHandlers = this.onSceneHandlers.concat(fn);
       },
 
       identity: function identity()
@@ -152,7 +152,6 @@
       }
    };
 })();
-
 
 var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array;
 
@@ -539,7 +538,6 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
  */
 Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
 
-
 (function() {
    "use strict";
 
@@ -648,13 +646,13 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
        * Add an onParticle event handler function to the entity. Typically used to decorate or modify a particle
        * before it is added to the emitter child list and begins it's lifecycle.
        * 
-       * @param fn {function}    onParticle handler signature:
-       *        function(particle) this = Phoria.EmitterEntity
+       * @param fn {function}    onParticle handler signature: function(particle) this = Phoria.EmitterEntity,
+       *                         accepts [] of functions also
        */
       onParticle: function onParticle(fn)
       {
          if (this.onParticleHandlers === null) this.onParticleHandlers = [];
-         this.onParticleHandlers.push(fn);
+         this.onParticleHandlers = this.onParticleHandlers.concat(fn);
       },
       
       /**

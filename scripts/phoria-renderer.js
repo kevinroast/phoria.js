@@ -77,7 +77,13 @@
                // Distant lights have no "position" - they simply light the world with parallel rays from an
                // infinitely distant location - closest example is light from the sun when overhead
                // note that light worlddirection is precalculated as negative.
-               brightness = vec3.dot(normal, light.worlddirection) * light.intensity * obj.style.diffuse;
+               var dotVP = vec3.dot(normal, light.worlddirection);
+               
+               // don't waste any more time calculating if the dot product is negative i.e. > 90 degrees
+               if (dotVP <= 0) continue;
+               
+               // combine light intensity with dot product and object diffuse value
+               brightness = dotVP * light.intensity * obj.style.diffuse;
             }
             else if (light instanceof Phoria.PointLight)
             {

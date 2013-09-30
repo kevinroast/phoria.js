@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Phoria - Dev test page 6</title>
+      <script src="scripts/gl-matrix.js"></script>
+      <script src="scripts/phoria-util.js"></script>
+      <script src="scripts/phoria-entity.js"></script>
+      <script src="scripts/phoria-scene.js"></script>
+      <script src="scripts/phoria-renderer.js"></script>
+      <script src='scripts/dat.gui.min.js'></script>
+      <script>
+var requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+                       window.mozRequestAnimationFrame || window.msRequestAnimationFrame || 
+                       function(c) {window.setTimeout(c, 15)};
+/**
+   Phoria
+   pho·ri·a (fôr-)
+   n. The relative directions of the eyes during binocular fixation on a given object
+*/
+
+// bind to window onload event
+window.addEventListener('load', onloadHandler, false);
+
+var scene;
+function onloadHandler()
+{
+   // get the canvas DOM element and the 2D drawing context
+   var canvas = document.getElementById('canvas');
+   
+   // create the scene and setup camera, perspective and viewport
+   scene = new Phoria.Scene();
+   scene.camera.position = {x:0.0, y:2, z:-20.0};
+   scene.camera.lookat = {x:0.0, y:2, z:0};
+   scene.perspective.fov = 25;
+   scene.perspective.aspect = canvas.width / canvas.height;
+   scene.viewport.width = canvas.width;
+   scene.viewport.height = canvas.height;
+
+   // event handler to rotate the camera around the scene
+   var rotation = 0.0;
+   scene.onCamera(function(position, lookAt, up) {
+      var rotMatrix = mat4.create();
+      mat4.rotateY(rotMatrix, rotMatrix, rotation);
+      rotation -= 0.01;
+      vec4.transformMat4(position, position, rotMatrix);
+   });
+   
+   // create a canvas renderer
+   var renderer = new Phoria.CanvasRenderer(canvas);
+   
+   // add a grid to help visualise camera position etc.
+   var plane = Phoria.Util.generateTesselatedPlane(10,10,0,10);
+   var grid = Phoria.Entity.create({
+      points: plane.points,
+      edges: plane.edges,
+      polygons: plane.polygons,
+      style: {
+         drawmode: "wireframe",
+         shademode: "plain",
+         linewidth: 0.5,
+         sortmode: "unsorted"
+      }
+   });
+   grid.translateY(5);
+   grid.rotateX(Math.PI/2);
+   scene.graph.push(grid);
+
+   // add some axis lines to the grid
+   var axis = Phoria.Entity.create({
+      points: [{x:-5,y:0,z:0},{x:5,y:0,z:0},{x:-5,y:10,z:0}],
+      edges: [{a:0, b:1},{a:0,b:2}],
+      style: {
+         color: [0,0,0],
+         drawmode: "wireframe",
+         shademode: "plain",
+         linewidth: 4,
+         linescale: 1,
+         sortmode: "unsorted"
+      }
+   });
+   scene.graph.push(axis);
+
+   // some random x/y data to construct our graph object from
+   var data = [0,0,5,15,10,10,15,25,20,25,25,20,30,30,35,15,40,20,45,25,50,20,55,20,60,25,65,35,70,20,75,25,80,20,85,15,90,25,100,50];
+   // function to convert x/y dataset into a 3D object of points and lines - with optional scaling factor
+   var generateGraph = function(data, scale) {
+      var points = [], edges = [];
+      for (var i = 0; i < data.length; i+=2) {
+         points.push({x:data[i]*scale, y:data[i+1]*scale, z:0});
+         if (i > 0)
+         {
+            edges.push({a:(~~i/2)-1, b:~~i/2});
+         }
+      };
+      return Phoria.Entity.create({
+         points: points,
+         edges: edges,
+         style: {
+            color: [255,128,64],
+            drawmode: "wireframe",
+            shademode: "plain",
+            linewidth: 4,
+            linescale: 1,
+            sortmode: "unsorted"
+         }
+      });
+   };
+   // add the 3D object to the scene, translate it to show it slightly away from the grid
+   var grph = generateGraph(data, 0.1);
+   grph.translateX(-5).translateZ(-0.5);
+   scene.graph.push(grph);
+
+   var pause = false;
+   var fnAnimate = function() {
+      if (!pause)
+      {
+         // execute the model view 3D pipeline and render the scene
+         scene.modelView();
+         renderer.render(scene);
+      }
+      requestAnimFrame(fnAnimate);
+   };
+
+   // key binding
+   document.addEventListener('keydown', function(e) {
+      switch (e.keyCode)
+      {
+         case 27: // ESC
+            pause = !pause;
+            break;
+      }
+   }, false);
+   // add GUI controls
+   var gui = new dat.GUI();
+   var f = gui.addFolder('Perspective');
+   f.add(scene.perspective, "fov").min(5).max(175);
+   f.add(scene.perspective, "near").min(1).max(100);
+   f.add(scene.perspective, "far").min(1).max(1000);
+   f = gui.addFolder('Camera LookAt');
+   f.add(scene.camera.lookat, "x").min(-100).max(100);
+   f.add(scene.camera.lookat, "y").min(-100).max(100);
+   f.add(scene.camera.lookat, "z").min(-100).max(100);
+   f.open();
+   f = gui.addFolder('Camera Position');
+   f.add(scene.camera.position, "x").min(-100).max(100);
+   f.add(scene.camera.position, "y").min(-100).max(100);
+   f.add(scene.camera.position, "z").min(-100).max(100);
+   f.open();
+   
+   // start animation
+   requestAnimFrame(fnAnimate);
+}
+      </script>
+   </head>
+   
+   <body style="background-color: #bfbfbf">
+      <canvas id="canvas" width="768" height="512" style="background-color: #fff"></canvas>
+      <div><a style="color:#225588;text-decoration:none;" href="./index.html">&lt;&lt; Phoria demos</a></div>
+   </body>
+</html>
