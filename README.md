@@ -36,3 +36,5 @@ http://www.kevs3d.co.uk/dev/phoria/test4t.html - test 4t - sprite particles flam
 http://www.kevs3d.co.uk/dev/phoria/test5.html - test 5 - dynamic texturing - paint gun
 
 http://www.kevs3d.co.uk/dev/phoria/test6.html - test 6 - data visualisation - graph
+
+http://www.kevs3d.co.uk/dev/phoria/test7.html - test 7 - scene triggers - a sequence of actions
