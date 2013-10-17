@@ -38,3 +38,7 @@ http://www.kevs3d.co.uk/dev/phoria/test5.html - test 5 - dynamic texturing - pai
 http://www.kevs3d.co.uk/dev/phoria/test6.html - test 6 - data visualisation - graph
 
 http://www.kevs3d.co.uk/dev/phoria/test7.html - test 7 - scene triggers - a sequence of actions
+
+http://www.kevs3d.co.uk/dev/phoria/test8.html - test 8 - scene triggers, particle field, spaceships
+
+http://www.kevs3d.co.uk/dev/phoria/test9.html - test 9 - fireworks demo - scene triggers, particles
