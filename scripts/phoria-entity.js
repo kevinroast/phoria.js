@@ -23,6 +23,7 @@
    /**
     * Factory create method - object literal Entity descripton:
     * {
+    *    id: string,
     *    matrix: mat4,
     *    children: [...],
     *    onScene: function() {...}
@@ -32,6 +33,7 @@
    {
       // merge structures to generate entity
       if (!e) e = new Phoria.BaseEntity();
+      if (desc.id) e.id = desc.id;
       if (desc.matrix) e.matrix = desc.matrix;
       if (desc.children) e.children = desc.children;
       if (desc.onScene) e.onScene(desc.onScene);
@@ -41,6 +43,9 @@
    
    Phoria.BaseEntity.prototype =
    {
+      // {string} optional unique ID for direct look-up of entity during event handlers etc.
+      id: null,
+
       // {Array} child objects for the purposes of affine transformations - parent matrix applied first
       // the child objects themselves can of course have further child objects
       children: null,
@@ -194,9 +199,10 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
    /**
     * Factory create method - object literal Entity descripton:
     * {
-    *    matrix: mat4,
-    *    children: [...],
-    *    onScene: function() {...},
+    *    id: string                    // unique ID for easy lookup of entity later in event handlers etc.
+    *    matrix: mat4,                 // initial transformation matrix to use
+    *    children: [...],              // child list of entities - they inherit the parent transformation matrix
+    *    onScene: function() {...},    // onScene event handler function(s) 
     *    
     *    points: [{x:0,y:0},...],
     *    edges: [{a:0,b:1},...],
@@ -296,6 +302,7 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
       
       /**
        * Calculate and store the vertex normals for the entity. Note! dependent on generatePolygonNormals()
+       * TODO: this is not used yet for anything - and has not been tested at all!
        */
       generateVertexNormals: function generateVertexNormals()
       {
@@ -354,22 +361,25 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
       
       /**
        * Init all the buffers needed by the entity during scene pipeline processing.
-       * Buffers are reallocated if the number of coordinates in the entity changes.
+       * Buffers are re-allocated if the number of coordinates in the entity changes.
        */
       initCoordinateBuffers: function initCoordinateBuffers()
       {
          var len = this.points.length;
          if (this._worldcoords === null || this._worldcoords.length < len)
          {
-            this._worldcoords = this.populateBuffer(len, function() {return vec4.create()});
+            this._worldcoords = new Array(len);
+            for (var i=0; i<len; i++) this._worldcoords[i] = vec4.create();
          }
          if (this._coords === null || this._coords.length < len)
          {
-            this._coords = this.populateBuffer(len, function() {return vec4.create()});
+            this._coords = new Array(len);
+            for (var i=0; i<len; i++) this._coords[i] = vec4.create();
          }
          if (this._worldVertexNormals === null || this._worldVertexNormals.length < len)
          {
-            this._worldVertexNormals = this.populateBuffer(len, function() {return vec4.create()});
+            this._worldVertexNormals = new Array(len);
+            for (var i=0; i<len; i++) this._worldVertexNormals[i] = vec4.create();
          }
          if (this._clip === null || this._clip.length < len)
          {
@@ -396,8 +406,10 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
    Phoria.PositionalAspect = {};
    
    /**
-    * The PositionalAspect has defines a prototype for objects that are not rendered but have a position in the scene.
-    * Augment an object with this aspect to provide positional behaviour.
+    * The PositionalAspect has defines a prototype for objects that may not be rendered directly (i.e. do not need
+    * to have a visible entity) but do represent a position in the scene.
+    * Augment an object with this aspect to provide an easy way to keep track of a it's position in the scene after
+    * matrix transformations have occured.
     */
    Phoria.PositionalAspect.prototype =
    {

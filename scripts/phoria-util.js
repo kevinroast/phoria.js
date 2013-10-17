@@ -97,6 +97,12 @@ if (typeof Phoria === "undefined" || !Phoria)
       }
    }
    
+   /**
+    * Augment an existing object prototype with additional properties and functions from another prototype.
+    * 
+    * @param {Object} r    Receiving object
+    * @param {Object} s    Source object
+    */
    Phoria.Util.augment = function augment(r, s)
    {
       for (var p in s.prototype)
@@ -109,9 +115,10 @@ if (typeof Phoria === "undefined" || !Phoria)
    }
    
    /**
-    * Merge two objects - useful for config default and user settings merging.
-    * Deep merge returning the combined object. The source overwrites the target if names match.
-    * Arrays are merged, but source values for base datatypes always win.
+    * Merge two objects into a new object - does not affect either of the original objects.
+    * Useful for Entity config default and user config merging.
+    * Deep merge returning a combined object. The source overwrites the target if names match.
+    * Nested Arrays contents including objects are also merged, source values for base datatypes win.
     */
    Phoria.Util.merge = function merge(target, src)
    {
@@ -150,7 +157,7 @@ if (typeof Phoria === "undefined" || !Phoria)
             }
             else
             {
-               if (!target[key])
+               if (!target || !target[key])
                {
                   dst[key] = src[key];
                }
@@ -164,10 +171,52 @@ if (typeof Phoria === "undefined" || !Phoria)
       
       return dst;
    }
+
+   /**
+    * Deep combine a source object properties into a target object.
+    * Like the merge function above, this will deep combine object and Arrays and the contents,
+    * however it will overwrite the properties of the target when doing so.
+    */
+   Phoria.Util.combine = function combine(target, src)
+   {
+      var array = Array.isArray(src) && Array.isArray(target);
+      if (array)
+      {
+         if (target.length < src.length) target.length = src.length
+         src.forEach(function(e, i)
+         {
+            if (typeof e === 'object')
+            {
+               target[i] = target[i] || {};
+               Phoria.Util.combine(target[i], e);
+            }
+            else
+            {
+               // overwrite basic value types - source wins
+               target[i] = e;
+            }
+         });
+      }
+      else
+      {
+         Object.keys(src).forEach(function (key) {
+            if (typeof src[key] !== 'object' || !src[key])
+            {
+               target[key] = src[key];
+            }
+            else
+            {
+               target[key] = target[key] || (Array.isArray(src[key]) ? [] : {});
+               Phoria.Util.combine(target[key], src[key]);
+            }
+         });
+      }
+   }
    
    /**
     * Shallow and cheap (1 level deep only) clone for simple property based objects.
-    * Properties are only safely copied if they are base datatypes or array of such.
+    * Properties are only safely copied if they are base datatypes or an array of such.
+    * Should only be used for simple structures such as entity "style" objects.
     */
    Phoria.Util.clone = function clone(src)
    {
@@ -403,6 +452,8 @@ if (typeof Phoria === "undefined" || !Phoria)
 
    /**
     * Generate the geometry for a 1x1x1 unit cube
+    * 
+    * @param scale   optional scaling factor
     */
    Phoria.Util.generateUnitCube = function generateUnitCube(scale)
    {
@@ -410,6 +461,32 @@ if (typeof Phoria === "undefined" || !Phoria)
       return {
          points: [{x:-1*s,y:1*s,z:-1*s}, {x:1*s,y:1*s,z:-1*s}, {x:1*s,y:-1*s,z:-1*s}, {x:-1*s,y:-1*s,z:-1*s},
                   {x:-1*s,y:1*s,z:1*s}, {x:1*s,y:1*s,z:1*s}, {x:1*s,y:-1*s,z:1*s}, {x:-1*s,y:-1*s,z:1*s}],
+         edges: [{a:0,b:1}, {a:1,b:2}, {a:2,b:3}, {a:3,b:0}, {a:4,b:5}, {a:5,b:6}, {a:6,b:7}, {a:7,b:4}, {a:0,b:4}, {a:1,b:5}, {a:2,b:6}, {a:3,b:7}],
+         polygons: [{vertices:[0,1,2,3]},{vertices:[0,4,5,1]},{vertices:[1,5,6,2]},{vertices:[2,6,7,3]},{vertices:[4,0,3,7]},{vertices:[5,4,7,6]}]
+      };
+   }
+
+   /**
+    * {
+    *    scalex: 1,
+    *    scaley: 1,
+    *    scalez: 1,
+    *    offsetx: 0,
+    *    offsety: 0,
+    *    offsetz: 0
+    * }
+    */
+   Phoria.Util.generateCuboid = function generateCuboid(desc)
+   {
+      var scalex = desc.scalex || 1,
+          scaley = desc.scaley || 1,
+          scalez = desc.scalez || 1,
+          offsetx = desc.offsetx || 0,
+          offsety = desc.offsety || 0,
+          offsetz = desc.offsetz || 0;
+      return {
+         points: [{x:-1*scalex,y:1*scaley,z:-1*scalez}, {x:1*scalex,y:1*scaley,z:-1*scalez}, {x:1*scalex,y:-1*scaley,z:-1*scalez}, {x:-1*scalex,y:-1*scaley,z:-1*scalez},
+                  {x:-1*scalex,y:1*scaley,z:1*scalez}, {x:1*scalex,y:1*scaley,z:1*scalez}, {x:1*scalex,y:-1*scaley,z:1*scalez}, {x:-1*scalex,y:-1*scaley,z:1*scalez}],
          edges: [{a:0,b:1}, {a:1,b:2}, {a:2,b:3}, {a:3,b:0}, {a:4,b:5}, {a:5,b:6}, {a:6,b:7}, {a:7,b:4}, {a:0,b:4}, {a:1,b:5}, {a:2,b:6}, {a:3,b:7}],
          polygons: [{vertices:[0,1,2,3]},{vertices:[0,4,5,1]},{vertices:[1,5,6,2]},{vertices:[2,6,7,3]},{vertices:[4,0,3,7]},{vertices:[5,4,7,6]}]
       };

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Phoria - Dev test page 9</title>
+      <script src="scripts/gl-matrix.js"></script>
+      <script src="scripts/phoria-util.js"></script>
+      <script src="scripts/phoria-entity.js"></script>
+      <script src="scripts/phoria-scene.js"></script>
+      <script src="scripts/phoria-renderer.js"></script>
+      <script>
+var requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+                       window.mozRequestAnimationFrame || window.msRequestAnimationFrame || 
+                       function(c) {window.setTimeout(c, 15)};
+/**
+   Phoria
+   pho·ri·a (fôr-)
+   n. The relative directions of the eyes during binocular fixation on a given object
+*/
+
+// bind to window onload event
+window.addEventListener('load', onloadHandler, false);
+
+var bitmaps = [];
+function onloadHandler()
+{
+   var Rnd = function(s) {return Math.random() * s};
+
+   // get the canvas DOM element and the 2D drawing context
+   var canvas = document.getElementById('canvas');
+   
+   // remove frame margin and scrollbars when maxing out size of canvas
+   document.body.style.margin = "0px";
+   document.body.style.overflow = "hidden";
+
+   // get dimensions of window and resize the canvas to fit
+   var width = window.innerWidth,
+       height = window.innerHeight;
+   canvas.width = width;
+   canvas.height = height;
+
+   // create the scene and setup camera, perspective and viewport
+   var scene = new Phoria.Scene();
+   scene.camera.position = {x:0, y:25.0, z:-60.0};
+   scene.camera.lookat = {x:0.0, y:15.0, z:0.0};
+   scene.perspective.aspect = canvas.width / canvas.height;
+   scene.viewport.width = canvas.width;
+   scene.viewport.height = canvas.height;
+   
+   // create a canvas renderer
+   var renderer = new Phoria.CanvasRenderer(canvas);
+   
+   // add a grid to help visualise camera position etc.
+   var plane = Phoria.Util.generateTesselatedPlane(16,16,0,40);
+   scene.graph.push(Phoria.Entity.create({
+      points: plane.points,
+      edges: plane.edges,
+      polygons: plane.polygons,
+      style: {
+         color: [160,255,160],
+         drawmode: "wireframe",
+         shademode: "plain",
+         linewidth: 0.5,
+         sortmode: "unsorted"
+      }
+   }));
+
+   // random starfield object - centered on the origin
+   var fnGenerateStarfield = function(num, scale) {
+      scale = scale || 1;
+      var s = scale / 2;
+      var points = [];
+      for (var i = 0; i < num; i++) {
+         // TODO: points too close to the origin (i.e. camera view point) shoud be discared
+         points.push({x:Math.random()*scale-s, y:Math.random()*scale-s, z:Math.random()*scale-s});
+      }
+      return Phoria.Entity.create({
+         points: points,
+         style: {
+            color: [200+~~(Math.random()*55),200+~~(Math.random()*55),200+~~(Math.random()*55)],
+            drawmode: "point",
+            shademode: "plain",
+            linewidth: 0.75,
+            sortmode: "unsorted"
+         }
+      });
+   };
+   scene.graph.push(fnGenerateStarfield(500,2000));
+
+   // particle emitters
+   // TODO: firework bitmap effect - sparkle/flicker etc.
+   //       - is a firework an emitter that itself has physics, is shot up into the air and eventually explodes
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(255,128,140,1)", "rgba(255,128,160,0)"));
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(128,255,140,1)", "rgba(128,255,160,0)"));
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(128,140,255,1)", "rgba(128,160,255,0)"));
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(255,128,255,1)", "rgba(255,128,255,0)"));
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(255,255,140,1)", "rgba(255,255,160,0)"));
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(128,255,255,1)", "rgba(160,255,255,0)"));
+
+   scene.onCamera(function(position, lookAt, up) {
+      var rotMatrix = mat4.create();
+      mat4.rotateY(rotMatrix, rotMatrix, Math.sin(Date.now()/10000)*RADIANS*360);
+      vec4.transformMat4(position, position, rotMatrix);
+   });
+
+   var emit = false;
+   scene.triggerHandlers.push({
+      trigger: function() {
+         // randomly add new emitters
+         //if (Math.random() > 0.97)
+         if (emit)
+         {
+            emit = false;
+            // TODO: different types of firework emitters
+            var emitter = Phoria.EmitterEntity.create({
+               position: {x:Rnd(-20)+10, y:0, z:Rnd(-20)+10},
+               positionRnd: {x:0.12+Rnd(0.05), y:0.12+Rnd(0.05), z:0.12+Rnd(0.05)},
+               rate: 50 + ~~Rnd(50),
+               velocity: {x:0, y:0, z:0},
+               velocityRnd: {x:0.0, y:0.12+Rnd(0.05), z:0.0},
+               lifetime: 450 + ~~Rnd(100),
+               lifetimeRnd: 150 + ~~Rnd(100),
+               gravity: true,
+               style: {
+                  compositeOperation: "lighter",
+                  shademode: "sprite",
+                  linewidth: 5 + ~~Rnd(5),
+                  sprite: bitmaps[~~Rnd(6)]
+               }
+            });
+            var emitterHandle = new Phoria.PhysicsEntity();
+            emitterHandle.createdon = Date.now();
+            emitterHandle.explode = Rnd(500) + 500;
+            emitterHandle.onScene(function() {
+               if (!this.exploded && Date.now() - this.createdon > this.explode)
+               {
+                  this.exploded = true;
+                  emitter.velocity = {x:0, y:0, z:0};
+                  emitter.velocityRnd = {x:0.4+Rnd(0.02), y:0.4+Rnd(0.02), z:0.4+Rnd(0.02)};
+                  emitter.gravity = false;
+                  emitter.rate = 400 + ~~Rnd(200);
+               }
+               if (Date.now() - this.createdon > this.explode+200)
+               {
+                  emitter.rate = 0;
+                  if (emitter.children.length === 0)
+                  {
+                     // remove!
+                     for (var i=0; i<scene.graph.length; i++)
+                     {
+                        if (scene.graph[i] === this)
+                        {
+                           scene.graph.splice(i, 1);
+                        }
+                     }
+                  }
+               }
+            });
+            emitterHandle.impulse({x:0, y:1350+Rnd(300), z:0});
+            emitterHandle.children.push(emitter);
+            scene.graph.push(emitterHandle);
+         }
+      }
+   });
+
+   var pause = false;
+   var fnAnimate = function() {
+      if (!pause)
+      {
+         // execute the model view 3D pipeline and render the scene
+         scene.modelView();
+         renderer.render(scene);
+      }
+      requestAnimFrame(fnAnimate);
+   };
+
+   // key binding
+   document.addEventListener('keydown', function(e) {
+      switch (e.keyCode)
+      {
+         case 32:
+            emit = true; break;
+         case 27:
+            if (pause) scene._lastTime = Date.now();
+            pause = !pause;
+            break;
+      }
+   }, false);
+   
+   // start animation
+   requestAnimFrame(fnAnimate);
+}
+      </script>
+   </head>
+   
+   <body style="background-color: #000">
+      <div style="z-index:100;position:absolute;width:100%"><div style="color:#fff;text-align:center;font-family:monospace">Press SPACE to launch a firework!</div></div>
+      <canvas id="canvas" style="background-color: #000"></canvas>
+   </body>
+</html>

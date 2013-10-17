@@ -37,7 +37,7 @@
          // near bound of the frustum
          near: 1.0,
          // far bound of the frustum
-         far: 1000.0
+         far: 10000.0
       };
       
       // typically this is set to the width and height of the canvas rendering area
@@ -238,16 +238,33 @@
       // {Array} the light entities that were found when processing the scene graph - set by modelView()
       lights: null,
       
-      // {Array} list of objects containing an "evaluator" function that is executed once per frame
-      // Each trigger can affect the scene at runtime and if needed expire the event handler from the list or
-      // add new trigger(s) with additional logic to continue a sequence of triggers and events.
+      // {Array} list of objects containing a "trigger" function that is executed once per frame.
+      // Each trigger can affect the scene at runtime and if needed expire the event handler from the active list
+      // or add new trigger(s) with additional logic to continue a sequence of triggers and events.
       triggerHandlers: null,
       
+      // @private {Array} list of onCamera event handler functions to be called on each frame - added via "onCamera()"
       onCameraHandlers: null,
+
+      // @private {Object} map of entity IDs to Phoria.Entity instances - flattened lookup list used by trigger handlers
+      // to lookup an entity without walking child lists or maintaining closure scope etc. Call findEntity() to use.
+      _entities: null,
 
       _lastTime: 0,
       _cameraPosition: null,
       _perspectiveScale: 0.0,
+
+      /**
+       * Helper to lookup an entity by it's optional ID. Useful for Trigger event handlers that don't
+       * want to walk complex trees of entities during event handler functions.
+       * 
+       * @param id {string}      ID of the entity to lookup
+       * @return Phoria.Entity or null if not found
+       */
+      findEntity: function findEntity(id)
+      {
+         return this._entities[id];
+      },
 
       /**
        * Add an onCamera event handler function to the entity
@@ -342,7 +359,8 @@
          // process each object in the scene graph
          // and recursively process each child entity (against parent local matrix)
          var renderlist = [],
-             lights = [];
+             lights = [],
+             entityById = {};
          
          // recursive processing function - keeps track of current matrix operation
          var fnProcessEntities = function processEntities(entities, matParent)
@@ -350,14 +368,18 @@
             for (var n=0, obj, len, isIdentity; n<entities.length; n++)
             {
                obj = entities[n];
+
+               // construct entity lookup list by optional ID
+               // used to quickly lookup entities in event handlers without walking child lists etc.
+               if (obj.id) entityById[obj.id] = obj;
                
                // multiply local with parent matrix to combine affine transformation
                var matLocal = obj.matrix;
                if (matParent)
                {
-                  matLocal = mat4.multiply(mat4.clone(matLocal), matLocal, matParent);
+                  // if parent matrix is provided multiply it against local matrix else use the parent matrix
+                  matLocal = matLocal ? mat4.multiply(mat4.clone(matLocal), matLocal, matParent) : matParent;
                }
-               isIdentity = Phoria.Util.isIdentity(matLocal);
                
                // hook point for onScene event handlers - custom user handlers or added by entities during
                // object construction - there can be multiple registered per entity
@@ -384,12 +406,12 @@
                   {
                      // construct homogeneous coordinate for the vertex as a vec4
                      verts = obj.points[v];
-                     vec = vec4.set(obj._worldcoords[v], verts.x, verts.y, verts.z, 1);
+                     vec = vec4.set(obj._worldcoords[v], verts.x, verts.y, verts.z, 1.0);
                      
                      // local object transformation -> world
-                     // skip local transform if matrix === identity
+                     // skip local transform if matrix not present
                      // else store locally transformed vec4 world points
-                     if (!isIdentity) vec4.transformMat4(vec, vec, matLocal);
+                     if (matLocal) vec4.transformMat4(vec, vec, matLocal);
                   }
                   
                   // multiply by camera matrix to generate world coords
@@ -424,7 +446,21 @@
                   
                   // perspective division to create vec2 NDC then finally transform to viewport
                   // clip calculation occurs before the viewport transform
-                  var objClip = 0;
+                  var objClip = 0,
+                      clipOffset = 0;
+                  if (obj.style.drawmode === "point")
+                  {
+                     // adjust vec by style linewidth calculation for linewidth scaled points or sprite points
+                     // this allows large sprite/rendered points to avoid being clipped too early
+                     if (obj.style.linescale === 0)
+                     {
+                        clipOffset = obj.style.linewidth * 0.5;
+                     }
+                     else
+                     {
+                        clipOffset = (obj.style.linewidth * obj.style.linescale) / this._perspectiveScale * 0.5;
+                     }
+                  }
                   for (var v=0, vec, w; v<len; v++)
                   {
                      vec = obj._coords[v];
@@ -434,7 +470,9 @@
                      if (w === 0) w = EPSILON;
                      
                      // is this vertex outside the clipping boundries for the perspective frustum?
-                     objClip += (obj._clip[v] = (vec[0] > w || vec[0] < -w || vec[1] > w || vec[1] < -w || vec[2] > w || vec[2] < -w) ? 1 : 0);
+                     objClip += (obj._clip[v] = (vec[0] > w+clipOffset || vec[0] < -w-clipOffset ||
+                                                 vec[1] > w+clipOffset || vec[1] < -w-clipOffset ||
+                                                 vec[2] > w || vec[2] < -w) ? 1 : 0);
                      
                      // perspective division
                      vec[0] /= w;
@@ -504,11 +542,12 @@
                
             } // end entity list loop
          };
-         fnProcessEntities.call(this, this.graph);
+         fnProcessEntities.call(this, this.graph, null);
 
          // set the public references to the flattened list of objects to render and the list of lights
          this.renderlist = renderlist;
          this.lights = lights;
+         this._entities = entityById;
 
          // Process the scene trigger functions - this allows for real-time modification of the scene
          // based on a supplied handler function - a sequence of these triggers can nest and add new

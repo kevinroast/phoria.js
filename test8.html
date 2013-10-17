@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Phoria - Dev test page 8</title>
+      <script src="scripts/gl-matrix.js"></script>
+      <script src="scripts/phoria-util.js"></script>
+      <script src="scripts/phoria-entity.js"></script>
+      <script src="scripts/phoria-scene.js"></script>
+      <script src="scripts/phoria-renderer.js"></script>
+      <script>
+var requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+                       window.mozRequestAnimationFrame || window.msRequestAnimationFrame || 
+                       function(c) {window.setTimeout(c, 15)};
+/**
+   Phoria
+   pho·ri·a (fôr-)
+   n. The relative directions of the eyes during binocular fixation on a given object
+*/
+
+// bind to window onload event
+window.addEventListener('load', onloadHandler, false);
+
+var bitmaps = [];
+function onloadHandler()
+{
+   // get the canvas DOM element and the 2D drawing context
+   var canvas = document.getElementById('canvas');
+   
+   // remove frame margin and scrollbars when maxing out size of canvas
+   document.body.style.margin = "0px";
+   document.body.style.overflow = "hidden";
+
+   // get dimensions of window and resize the canvas to fit
+   var width = window.innerWidth,
+       height = window.innerHeight;
+   canvas.width = width;
+   canvas.height = height;
+
+   // create the scene and setup camera, perspective and viewport
+   var scene = new Phoria.Scene();
+   scene.camera.position = {x:-150, y:15.0, z:-25.0};
+   scene.camera.lookat = {x:0.0, y:2.0, z:0.0};
+   scene.perspective.aspect = canvas.width / canvas.height;
+   scene.viewport.width = canvas.width;
+   scene.viewport.height = canvas.height;
+   
+   // create a canvas renderer
+   var renderer = new Phoria.CanvasRenderer(canvas);
+   
+   // random starfield object - centered on the origin
+   var fnGenerateStarfield = function(num, scale) {
+      scale = scale || 1;
+      var s = scale / 2;
+      var points = [];
+      for (var i = 0; i < num; i++) {
+         points.push({x:Math.random()*scale-s, y:Math.random()*scale-s, z:Math.random()*scale-s});
+      }
+      return Phoria.Entity.create({
+         points: points,
+         style: {
+            color: [200+~~(Math.random()*55),200+~~(Math.random()*55),200+~~(Math.random()*55)],
+            drawmode: "point",
+            shademode: "plain",
+            linewidth: 0.5,
+            linescale: 200,
+            sortmode: "unsorted"
+         }
+      });
+   };
+   var starfield = fnGenerateStarfield(2000,5000);
+   starfield.matrix = null;
+   scene.graph.push(starfield);
+   
+   var sun = Phoria.Entity.create({
+      id: "sun",
+      points: [{x:0,y:0,z:100}],
+      style: {
+         color: [255,255,0],
+         drawmode: "point",
+         shademode: "plain",
+         linewidth: 1000,
+         linescale: 1,
+         sortmode: "unsorted"
+      }
+   })
+   sun.matrix = null;
+   scene.graph.push(sun);
+
+   // fake sun light
+   scene.graph.push(Phoria.DistantLight.create({
+      color: [1,1,0.5],
+      direction: {x:0.5, y:0.5, z:-1},
+      intensity: 1
+   }));
+   
+   // cobra MK3
+   var cobra1 = Phoria.Entity.create({
+         points: [{x:0.00000,y:15.00000,z:0.00000},
+            {x:16.00000,y:-0.50000,z:32.50000},
+            {x:-16.00000,y:-0.50000,z:32.50000},
+            {x:16.00000,y:-15.00000,z:-32.50000},
+            {x:-16.00000,y:-15.00000,z:-32.50000},
+            {x:-44.00000,y:10.00000,z:-32.50000},
+            {x:-60.00000,y:-3.00000,z:-13.00000},
+            {x:-65.00000,y:-3.00000,z:-32.50000},
+            {x:44.00000,y:10.00000,z:-32.50000},
+            {x:60.00000,y:-3.00000,z:-13.00000},
+            {x:65.00000,y:-3.00000,z:-32.50000},
+            {x:0.00000,y:15.00000,z:-32.50000}],
+         polygons: [{vertices:[8,0,1]},
+              {vertices:[1,0,2]},
+              {vertices:[9,1,3]},
+              {vertices:[1,2,4]},
+              {vertices:[3,1,4]},
+              {vertices:[6,7,4]},
+              {vertices:[2,0,5]},
+              {vertices:[6,2,5]},
+              {vertices:[4,2,6]},
+              {vertices:[6,5,7]},
+              {vertices:[11,0,8]},
+              {vertices:[5,11,8]},
+              {vertices:[7,5,8]},
+              {vertices:[4,7,8]},
+              {vertices:[3,4,8]},
+              {vertices:[10,3,8]},
+              {vertices:[8,1,9]},
+              {vertices:[10,8,9]},
+              {vertices:[3,10,9]},
+              {vertices:[5,0,11]}],
+         style: {
+            color: [200,202,210],
+            shademode: "lightsource"
+         }
+      });
+   cobra1.scaleN(0.2);
+   var cobra2 = new Phoria.Entity(), cobra3 = new Phoria.Entity();
+   Phoria.Util.combine(cobra2, cobra1);
+   Phoria.Util.combine(cobra3, cobra1);
+   cobra1.translateY(-500).rotateX(-Math.PI*0.5);
+   cobra1.onScene(function() {
+      this.translateZ(2.5);
+      this.rotateZ(Math.PI*0.003)
+   });
+   cobra2.translateX(175).translateY(-600).rotateX(-Math.PI*0.45);
+   cobra2.onScene(function() {
+      this.translateZ(2.75);
+      this.rotateZ(-Math.PI*0.001)
+   });
+   cobra3.translateZ(-100).translateY(-450).rotateX(-Math.PI*0.55);
+   cobra3.onScene(function() {
+      this.translateZ(2.35);
+      this.rotateZ(Math.PI*0.002)
+   });
+
+   // comet - particle emitter
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(32, "rgba(128,128,140,1)", "rgba(128,128,160,0)"));
+   var emitter = Phoria.EmitterEntity.create({
+      positionRnd: {x:0, y:0.15, z:0},
+      rate: 75,
+      velocity: {x:-0.15, y:0, z:0},
+      velocityRnd: {x:0.05, y:0, z:0},
+      lifetime: 1000,
+      lifetimeRnd: 500,
+      gravity: false,
+      style: {
+         compositeOperation: "lighter",
+         shademode: "sprite",
+         linewidth: 32,
+         sprite: bitmaps[0]
+      }
+   });
+   // start over to the left, and move along the X axis
+   emitter.translateX(-200);
+   var emitterVel = [0.5,0,0];
+   emitter.onScene(function() {
+      this.translate(emitterVel);
+   });
+   scene.graph.push(emitter);
+   // emitter is a source of light
+   emitter.children.push(Phoria.PointLight.create({
+      color: [0.95,0.95,1],
+      intensity: 5
+   }));
+
+   // add the cobras last to make them easy to remove
+   scene.graph.push(cobra1, cobra2, cobra3);
+
+   // camera track the emitter object position
+   scene.onCamera(function(position, lookAt, up) {
+      if (emitter.worldposition)
+      {
+         lookAt[0] = emitter.worldposition[0];
+         lookAt[1] = emitter.worldposition[1];
+         lookAt[2] = emitter.worldposition[2];
+      }
+   });
+
+   // triggers for camera animation etc.
+   var then = Date.now() / 100;
+   scene.triggerHandlers.push({
+      trigger: function() {
+         // once emitter goes past us, remove the cobras from the scene
+         // TODO: find a better way to do this? onScene() and remove by ID?
+         if (emitter.worldposition[0] > 0)
+         {
+            scene.graph.splice(scene.graph.length - 3, 3);
+            return true;
+         }
+      }
+   });
+   scene.triggerHandlers.push({
+      trigger: function() {
+         // once emitter goes past us, move camera above the object and track along with it
+         if (emitter.worldposition[0] > 0)
+         {
+            scene.camera.position.x = emitter.worldposition[0];
+            scene.camera.position.y = 30;
+            scene.camera.position.z = (Date.now()/100) - then - 150;
+         }
+         // emitter goes up when it passes a certain point
+         if (emitter.worldposition[0] > 150)
+         {
+            // tween the velocity x/y of the object (and the particle output velocity)
+            if (emitterVel[1] < 0.5)
+            {
+               emitter.velocity.x += 0.003;
+               emitter.velocity.y -= 0.003;
+               emitterVel[0] -= 0.01;
+               emitterVel[1] += 0.01;
+            }
+            else
+            {
+               // once the velocity is fully set, start the next trigger
+               scene.triggerHandlers.push({
+                  trigger: function() {
+                     // once it is high enough, blow it up!
+                     if (emitter.worldposition[1] > 100)
+                     {
+                        emitter.velocity = {x:0, y:0, z:0};
+                        emitter.velocityRnd = {x:1, y:1, z:1};
+                        emitter.gravity = true;
+                        emitter.rate = 500;
+                        emitter.style.linewidth = 32;
+                        emitterVel = [0,0,0];
+                        var time = Date.now();
+                        scene.triggerHandlers.push({
+                           trigger: function() {
+                              // end the explosion after a few ms
+                              if (Date.now() > time + 300)
+                              {
+                                 emitter.rate = 0;
+                                 return true;
+                              }
+                           }
+                        });
+                        return true;
+                     }
+                  }
+               });
+               return true;
+            }
+         }
+      }
+   });
+
+   var pause = false;
+   var fnAnimate = function() {
+      if (!pause)
+      {
+         // execute the model view 3D pipeline and render the scene
+         scene.modelView();
+         renderer.render(scene);
+      }
+      requestAnimFrame(fnAnimate);
+   };
+
+   // key binding
+   document.addEventListener('keydown', function(e) {
+      switch (e.keyCode)
+      {
+         case 27:
+            if (pause) scene._lastTime = Date.now();
+            pause = !pause;
+            break;
+      }
+   }, false);
+   
+   // start animation
+   requestAnimFrame(fnAnimate);
+}
+      </script>
+   </head>
+   
+   <body style="background-color: #000">
+      <canvas id="canvas" style="background-color: #000"></canvas>
+      <div><a style="color:#225588;text-decoration:none;" href="./index.html">&lt;&lt; Phoria demos</a></div>
+   </body>
+</html>

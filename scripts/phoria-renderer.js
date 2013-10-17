@@ -404,7 +404,8 @@
          if (obj.style.linescale !== 0)
          {
             // use the perspective divisor to calculate line width scaling
-            w = ((obj.style.linewidth * obj.style.linescale) / obj._coords[index][3]) * scene._perspectiveScale;
+            // try to keep this calculation in sync with scene point clipOffset calculation
+            w = (obj.style.linewidth * obj.style.linescale * scene._perspectiveScale) / obj._coords[index][3];
          }
 
          switch (obj.style.shademode)
@@ -425,6 +426,16 @@
                }
                break;
             }
+            /*case "callback":
+            {
+               // TODO: rendering callback function? - probably not add to "style" as this is a json like structure
+               //       perhaps an Entity.onRender() that is optionally only used in areas such as this one...
+               if (obj.style.callback)
+               {
+                  obj.style.callback.call(obj, ctx, coord, w);
+               }
+               break;
+            }*/
             case "lightsource":
             {
                // lighting calc
