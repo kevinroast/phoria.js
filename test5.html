@@ -94,7 +94,6 @@ function init()
    buffer.width = buffer.height = TEXTURESIZE;
    ctx = buffer.getContext('2d');
    ctx.drawImage(bitmaps[0], 0, 0);
-   //ctx.globalCompositeOperation = "lighter";
 
    // visible object to be parent of the particle emitter
    var c = Phoria.Util.generateUnitCube(1);
@@ -116,9 +115,8 @@ function init()
       rate: 20,
       velocity: {x:0.12, y:0.2, z:0.0},
       velocityRnd: {x:0.01, y:0.06, z:0.06},
-      lifetime: 2000,
+      lifetime: 3000,
       style: {
-         //compositeOperation: "lighter",
          sortmode: "sorted",
          shademode: "sprite",
          sprite: bitmaps[1]

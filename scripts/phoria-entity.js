@@ -202,11 +202,11 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
     *    id: string                    // unique ID for easy lookup of entity later in event handlers etc.
     *    matrix: mat4,                 // initial transformation matrix to use
     *    children: [...],              // child list of entities - they inherit the parent transformation matrix
-    *    onScene: function() {...},    // onScene event handler function(s) 
+    *    onScene: function() {...},    // onScene event handler function(s)
     *    
     *    points: [{x:0,y:0},...],
     *    edges: [{a:0,b:1},...],
-    *    polygons: [{vertices:[7,8,10,9]},...],
+    *    polygons: [{vertices:[7,8,10,9]},{vertices:[0,1,2],texture:0,uvs:[0,0,0.5,0.5,0.5,0]},...],
     *    style: {
     *       color: [128,128,128],      // RGB colour of the object surface
     *       specular: 0,               // if not zero, specifies specular shinyness power - e.g. values like 16 or 64
@@ -220,6 +220,7 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
     *       hiddenangle: 0.0,          // hidden surface test angle - generally between -PI and 0
     *       doublesided: false
     *    }
+    *    onRender: function() {...}
     * }
     */
    Phoria.Entity.create = function(desc, e)
@@ -231,6 +232,7 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
       if (desc.polygons) e.polygons = desc.polygons;
       if (desc.edges) e.edges = desc.edges;
       if (desc.style) e.style = Phoria.Util.merge(e.style, desc.style);
+      if (desc.onRender) e.onRender(desc.onRender);
       
       // generate normals - can call generate...() if manually changing points/polys at runtime
       e.generatePolygonNormals();
@@ -256,6 +258,8 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
       
       // {Array} list of texture images available to polygons
       textures: null,
+
+      onRenderHandlers: null,
       
       _worldcoords: null,
       _coords: null,
@@ -265,6 +269,18 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
       _averagez: 0,
       _sorted: true,
       
+      /**
+       * Add an onRender event handler function to the entity. Called if shademode="callback" for custom rendering.
+       * 
+       * @param fn {function}    onRender handler signature: function(ctx, x, y, w) this = Phoria.Entity,
+       *                         accepts [] of functions also
+       */
+      onRender: function onRender(fn)
+      {
+         if (this.onRenderHandlers === null) this.onRenderHandlers = [];
+         this.onRenderHandlers = this.onRenderHandlers.concat(fn);
+      },
+
       /**
        * Calculate and store the face normals for the entity
        */
@@ -290,12 +306,6 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
                z2 = points[vertices[2]].z - points[vertices[0]].z;
                // save the vec4 normal vector as part of the polygon data structure
                polygons[i].normal = Phoria.Util.calcNormalVector(x1, y1, z1, x2, y2, z2);
-
-               // set poly specific texture to null if not applied
-               if (polygons[i].texture === undefined)
-               {
-                  polygons[i].texture = null;
-               }
             }
          }
       },

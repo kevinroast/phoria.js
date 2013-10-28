@@ -410,10 +410,11 @@ if (typeof Phoria === "undefined" || !Phoria)
     * @param level   TODO: Subdivision level, 0-2 (quads, 2 tris, 4 tris)
     * @param scale   Scale of the plane - 1.0 is a unit plane centred on the origin
     */
-   Phoria.Util.generateTesselatedPlane = function generateTesselatedPlane(vsegs, hsegs, level, scale)
+   Phoria.Util.generateTesselatedPlane = function generateTesselatedPlane(vsegs, hsegs, level, scale, generateUVs)
    {
-      var points = [], edges = [], polys = [], hinc = scale/hsegs, vinc = scale/vsegs, c = 0;
-      for (var i=0, x, y = -scale/2; i<=vsegs; i++)
+      var points = [], edges = [], polys = [],
+          hinc = scale/hsegs, vinc = scale/vsegs, c = 0;
+      for (var i=0, x, y = scale/2; i<=vsegs; i++)
       {
          x = -scale/2;
          for (var j=0; j<=hsegs; j++)
@@ -434,13 +435,22 @@ if (typeof Phoria === "undefined" || !Phoria)
             if (i !== 0 && j !== 0)
             {
                // generate quad
-               polys.push( {vertices:[c-hsegs-1, c-hsegs-2, c-1, c]} );
+               var p = {vertices:[c-hsegs-1, c, c-1, c-hsegs-2]};
+               if (generateUVs)
+               {
+                  var uvs = [(1/hsegs) * j, (1/vsegs) * (i-1),
+                             (1/hsegs) * j, (1/vsegs) * i,
+                             (1/hsegs) * (j-1), (1/vsegs) * i,
+                             (1/hsegs) * (j-1), (1/vsegs) * (i-1)];
+                  p.uvs = uvs;
+               }
+               polys.push(p);
             }
             
             x += hinc;
             c++;
          }
-         y += vinc;
+         y -= vinc;
       }
       
       return {
@@ -462,7 +472,22 @@ if (typeof Phoria === "undefined" || !Phoria)
          points: [{x:-1*s,y:1*s,z:-1*s}, {x:1*s,y:1*s,z:-1*s}, {x:1*s,y:-1*s,z:-1*s}, {x:-1*s,y:-1*s,z:-1*s},
                   {x:-1*s,y:1*s,z:1*s}, {x:1*s,y:1*s,z:1*s}, {x:1*s,y:-1*s,z:1*s}, {x:-1*s,y:-1*s,z:1*s}],
          edges: [{a:0,b:1}, {a:1,b:2}, {a:2,b:3}, {a:3,b:0}, {a:4,b:5}, {a:5,b:6}, {a:6,b:7}, {a:7,b:4}, {a:0,b:4}, {a:1,b:5}, {a:2,b:6}, {a:3,b:7}],
-         polygons: [{vertices:[0,1,2,3]},{vertices:[0,4,5,1]},{vertices:[1,5,6,2]},{vertices:[2,6,7,3]},{vertices:[4,0,3,7]},{vertices:[5,4,7,6]}]
+         polygons: [{vertices:[0,1,2,3]},{vertices:[1,5,6,2]},{vertices:[5,4,7,6]},{vertices:[4,0,3,7]},{vertices:[0,4,5,1]},{vertices:[2,6,7,3]}]
+      };
+   }
+
+   /**
+    * Generate the geometry for 1x1.5x1 unit square based pyramid
+    * 
+    * @param scale   optional scaling factor
+    */
+   Phoria.Util.generatePyramid = function generatePyramid(scale)
+   {
+      var s = scale || 1;
+      return {
+         points: [{x:-1*s,y:0,z:-1*s}, {x:-1*s,y:0,z:1*s}, {x:1*s,y:0,z:1*s}, {x:1*s,y:0*s,z:-1*s}, {x:0,y:1.5*s,z:0}],
+         edges: [{a:0,b:1}, {a:1,b:2}, {a:2,b:3}, {a:3,b:0}, {a:0,b:4}, {a:1,b:4}, {a:2,b:4}, {a:3,b:4}],
+         polygons: [{vertices:[0,1,4]},{vertices:[1,2,4]},{vertices:[2,3,4]},{vertices:[3,0,4]},{vertices:[3,2,1,0]}]
       };
    }
 
@@ -495,9 +520,9 @@ if (typeof Phoria === "undefined" || !Phoria)
    /**
     * Generate the geometry for a sphere - triangles form the top and bottom segments, quads form the strips.
     */
-   Phoria.Util.generateSphere = function generateSphere(scale, lats, longs)
+   Phoria.Util.generateSphere = function generateSphere(scale, lats, longs, generateUVs)
    {
-      var points = [], edges = [], polys = [];
+      var points = [], edges = [], polys = [], uvs = [];
 
       for (var latNumber = 0; latNumber <= lats; ++latNumber)
       {
@@ -513,11 +538,12 @@ if (typeof Phoria === "undefined" || !Phoria)
             var x = cosPhi * sinTheta;
             var y = cosTheta;
             var z = sinPhi * sinTheta;
-            //var u = 1-(longNumber/longs);
-            //var v = latNumber/lats;
-
-            //texCoordData.push(u);
-            //texCoordData.push(v);
+            if (generateUVs)
+            {
+               var u = 1-(longNumber/longs);
+               var v = latNumber/lats;
+               uvs.push({u: u, v: v});
+            }
             points.push({
                x: scale * x,
                y: scale * y,
@@ -535,21 +561,36 @@ if (typeof Phoria === "undefined" || !Phoria)
             if (latNumber === 0)
             {
                // top triangle
-               polys.push({vertices: [first+1, second+1, second]});
-               edges.push( {a:first, b:second} );
+               var p = {vertices: [first+1, second+1, second]};
+               if (generateUVs)
+               {
+                  p.uvs = [uvs[first+1].u, uvs[first+1].v, uvs[second+1].u, uvs[second+1].v, uvs[second].u, uvs[second].v]
+               }
+               polys.push(p);
+               edges.push({a:first, b:second});
             }
             else if (latNumber === lats-1)
             {
                // bottom triangle
-               polys.push({vertices: [first+1, second, first]});
-               edges.push( {a:first, b:second} );
+               var p = {vertices: [first+1, second, first]};
+               if (generateUVs)
+               {
+                  p.uvs = [uvs[first+1].u, uvs[first+1].v, uvs[second].u, uvs[second].v, uvs[first].u, uvs[first].v]
+               }
+               polys.push(p);
+               edges.push({a:first, b:second});
             }
             else
             {
                // quad strip
-               polys.push({vertices: [first+1, second+1, second, first]});
-               edges.push( {a:first, b:second} );
-               edges.push( {a:second, b:second+1} );
+               var p = {vertices: [first+1, second+1, second, first]};
+               if (generateUVs)
+               {
+                  p.uvs = [uvs[first+1].u, uvs[first+1].v, uvs[second+1].u, uvs[second+1].v, uvs[second].u, uvs[second].v, uvs[first].u, uvs[first].v]
+               }
+               polys.push(p);
+               edges.push({a:first, b:second});
+               edges.push({a:second, b:second+1});
             }
          }
       }

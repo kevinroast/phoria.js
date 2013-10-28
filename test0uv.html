@@ -2,7 +2,7 @@
 <html>
    <head>
       <meta charset="utf-8">
-      <title>Phoria - Dev test page 0</title>
+      <title>Phoria - Dev test page 0uv</title>
       <script src="scripts/gl-matrix.js"></script>
       <script src="scripts/phoria-util.js"></script>
       <script src="scripts/phoria-entity.js"></script>
@@ -26,11 +26,9 @@ function onloadHandler()
 {
    // get the images loading
    var loader = new Phoria.Preloader();
-   for (var i=0; i<6; i++)
-   {
-      bitmaps.push(new Image());
-      loader.addImage(bitmaps[i], 'images/texture'+i+'.png');
-   }
+   bitmaps.push(new Image(), new Image());
+   loader.addImage(bitmaps[0], 'images/texture-wall.png');
+   loader.addImage(bitmaps[1], 'images/texture5.png');
    loader.onLoadCallback(init);
 }
 function init()
@@ -40,7 +38,8 @@ function init()
    
    // create the scene and setup camera, perspective and viewport
    var scene = new Phoria.Scene();
-   scene.camera.position = {x:0.0, y:5.0, z:-15.0};
+   scene.camera.position = {x:0.0, y:20.0, z:-25.0};
+   scene.camera.lookat = {x:0.0, y:-1.0, z:0.0};
    scene.perspective.aspect = canvas.width / canvas.height;
    scene.viewport.width = canvas.width;
    scene.viewport.height = canvas.height;
@@ -48,30 +47,84 @@ function init()
    // create a canvas renderer
    var renderer = new Phoria.CanvasRenderer(canvas);
    
-   // add a grid to help visualise camera position etc.
-   var plane = Phoria.Util.generateTesselatedPlane(8,8,0,20);
-   scene.graph.push(Phoria.Entity.create({
-      points: plane.points,
-      edges: plane.edges,
-      polygons: plane.polygons,
+   // add a subdivised plane to show benefit of uv coords on a large object
+   var p = Phoria.Util.generateTesselatedPlane(4,4,0,20, true);
+   var plane = Phoria.Entity.create({
+      points: p.points,
+      edges: p.edges,
+      polygons: p.polygons,
       style: {
-         drawmode: "wireframe",
-         linewidth: 0.5,
-         sortmode: "unsorted"
+         shademode: "plain"
       }
-   }));
-   var c = Phoria.Util.generateUnitCube();
+   });
+   plane.translateY(-1);
+   plane.textures.push(bitmaps[1]);
+   for (var i=0; i<plane.polygons.length; i++)
+   {
+      plane.polygons[i].texture = 0;
+   }
+   scene.graph.push(plane);
+   
+   var c = Phoria.Util.generateUnitCube(2);
    var cube = Phoria.Entity.create({
       points: c.points,
       edges: c.edges,
       polygons: c.polygons
    });
-   for (var i=0; i<6; i++)
+   cube.textures.push(bitmaps[1]);
+   for (var i=0; i<4; i++)
    {
-      cube.textures.push(bitmaps[i]);
-      cube.polygons[i].texture = i;
+      cube.polygons[i].texture = 0;
+      // test UV coords - select a quarter of the texture for the cube faces
+      switch (i)
+      {
+         case 0:
+            x = 0; y = 0; break;
+         case 1:
+            x = 0.5; y = 0; break;
+         case 2:
+            x = 0; y = 0.5; break;
+         case 3:
+            x = 0.5; y = 0.5; break;
+      }
+      cube.polygons[i].uvs = [0+x,0+y,0.5+x,0+y,0.5+x,0.5+y,0+x,0.5+y];
    }
    scene.graph.push(cube);
+   
+   var p = Phoria.Util.generatePyramid(2);
+   var pyramid = Phoria.Entity.create({
+      points: p.points,
+      edges: p.edges,
+      polygons: p.polygons
+   });
+   pyramid.textures.push(bitmaps[0]);
+   for (var i=0; i<4; i++)
+   {
+      pyramid.polygons[i].texture = 0;
+      // test UV coords - select a section of the wall texture for the pyramid faces
+      pyramid.polygons[i].uvs = [0.5,0,1,0,0.75,0.5];
+   }
+   pyramid.translateY(2);
+   scene.graph.push(pyramid);
+
+   var s = Phoria.Util.generateSphere(1.5, 8, 16, true);
+   var sphere = Phoria.Entity.create({
+      points: s.points,
+      polygons: s.polygons,
+      style: {
+         color: [255,128,64],
+         diffuse: 0.5,
+         specular: 64
+      }
+   });
+   sphere.textures.push(bitmaps[1]);
+   for (var i=0; i<sphere.polygons.length; i++)
+   {
+      sphere.polygons[i].texture = 0;
+   }
+   sphere.translateY(6);
+   scene.graph.push(sphere);
+
    scene.graph.push(Phoria.DistantLight.create({
       direction: {x:0, y:-1.5, z:1}
    }));
@@ -82,6 +135,8 @@ function init()
       {
          // rotate local matrix of the cube
          cube.rotateY(0.5*RADIANS);
+         pyramid.rotateY(-0.25*RADIANS);
+         sphere.rotateY(0.25*RADIANS);
          
          // execute the model view 3D pipeline and render the scene
          scene.modelView();
@@ -119,15 +174,6 @@ function init()
          case 27:
          {
             pause = !pause;
-            break;
-         }
-         case 32:
-         {
-            for (var i=0; i<6; i++)
-            {
-               //cube.textures.push(bitmaps[i]);
-               cube.polygons[i].texture = 5-i;
-            }
             break;
          }
       }

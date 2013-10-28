@@ -197,7 +197,8 @@
        *  and http://stackoverflow.com/questions/1109536/an-algorithm-for-inflating-deflating-offsetting-buffering-polygons
        * This neat routine means that the gaps between polygons seen in other Canvas based renders are not present. It adds
        * a few percent overhead in CPU processing, but that is much less than the canvas overhead of multiple fill() or other
-       * techniques commonly used to hide the polygon cracks.
+       * techniques commonly used to hide the polygon cracks. Also the multiple fill or fill then stroke techniques will not
+       * work with textured polygons.
        */
       inflatePolygon: function inflatePolygon(vertices, coords)
       {
@@ -426,16 +427,18 @@
                }
                break;
             }
-            /*case "callback":
+            case "callback":
             {
-               // TODO: rendering callback function? - probably not add to "style" as this is a json like structure
-               //       perhaps an Entity.onRender() that is optionally only used in areas such as this one...
-               if (obj.style.callback)
+               // optional rendering callback functions
+               if (obj.onRenderHandlers !== null)
                {
-                  obj.style.callback.call(obj, ctx, coord, w);
+                  for (var h in obj.onRenderHandlers)
+                  {
+                     obj.onRenderHandlers[h].call(obj, ctx, coord[0], coord[1], w);
+                  }
                }
                break;
-            }*/
+            }
             case "lightsource":
             {
                // lighting calc
@@ -513,7 +516,7 @@
          {
             case "plain":
             {
-               if (poly.texture === null)
+               if (poly.texture === undefined)
                {
                   fillStyle = color[0] + "," + color[1] + "," + color[2];
                }
@@ -537,17 +540,19 @@
          
          // render the polygon - textured or one of the solid fill modes
          ctx.save();
-         if (poly.texture !== null)
+         if (poly.texture !== undefined)
          {
-            var bitmap = obj.textures[ poly.texture ];
+            var bitmap = obj.textures[ poly.texture ],
+                tx0, ty0, tx1, ty1, tx2, ty2;
             var fRenderTriangle = function(vs, sx0, sy0, sx1, sy1, sx2, sy2)
             {
+               var x0 = vs[0][0], y0 = vs[0][1],
+                   x1 = vs[1][0], y1 = vs[1][1],
+                   x2 = vs[2][0], y2 = vs[2][1];
                ctx.beginPath();
-               ctx.moveTo(vs[0][0], vs[0][1]);
-               for (var i=1, j=vs.length; i<j; i++)
-               {
-                  ctx.lineTo(vs[i][0], vs[i][1]);
-               }
+               ctx.moveTo(x0, y0);
+               ctx.lineTo(x1, y1);
+               ctx.lineTo(x2, y2);
                ctx.closePath();
                ctx.clip();
                
@@ -555,9 +560,6 @@
                // TODO: figure out if drawImage goes faster if we specify the rectangle that bounds the source coords.
                // TODO: this is far from perfect - due to perspective corrected texture mapping issues see:
                //       http://tulrich.com/geekstuff/canvas/perspective.html
-               var x0 = vs[0][0], y0 = vs[0][1],
-                   x1 = vs[1][0], y1 = vs[1][1],
-                   x2 = vs[2][0], y2 = vs[2][1];
                
                // collapse terms
                var denom = denom = 1.0 / (sx0 * (sy2 - sy1) - sx1 * sy2 + sx2 * sy1 + (sx1 - sx2) * sy0);
@@ -589,8 +591,15 @@
             var inflatedVertices = this.inflatePolygon(vertices, coords);
             if (vertices.length === 3)
             {
-               fRenderTriangle.call(this, inflatedVertices, 0, 0, bitmap.width, 0, bitmap.width, bitmap.height);
-               // apply optionally fill style to shade and light the texture image
+               tx0 = 0, ty0 = 0, tx1 = bitmap.width, ty1 = 0, tx2 = bitmap.width, ty2 = bitmap.height;
+               if (poly.uvs !== undefined)
+               {
+                  tx0 = bitmap.width * poly.uvs[0]; ty0 = bitmap.height * poly.uvs[1];
+                  tx1 = bitmap.width * poly.uvs[2]; ty1 = bitmap.height * poly.uvs[3];
+                  tx2 = bitmap.width * poly.uvs[4]; ty2 = bitmap.height * poly.uvs[5];
+               }
+               fRenderTriangle.call(this, inflatedVertices, tx0, ty0, tx1, ty1, tx2, ty2);
+               // apply optional color fill to shade and light the texture image
                if (fillStyle !== null)
                {
                   ctx.fill();
@@ -598,18 +607,32 @@
             }
             else if (vertices.length === 4)
             {
+               tx0 = 0, ty0 = 0, tx1 = bitmap.width, ty1 = 0, tx2 = bitmap.width, ty2 = bitmap.height;
+               if (poly.uvs !== undefined)
+               {
+                  tx0 = bitmap.width * poly.uvs[0]; ty0 = bitmap.height * poly.uvs[1];
+                  tx1 = bitmap.width * poly.uvs[2]; ty1 = bitmap.height * poly.uvs[3];
+                  tx2 = bitmap.width * poly.uvs[4]; ty2 = bitmap.height * poly.uvs[5];
+               }
                ctx.save();
-               fRenderTriangle.call(this, inflatedVertices.slice(0, 3), 0, 0, bitmap.width, 0, bitmap.width, bitmap.height);
+               fRenderTriangle.call(this, inflatedVertices.slice(0, 3), tx0, ty0, tx1, ty1, tx2, ty2);
                ctx.restore();
                var v = new Array(3);
                v[0] = inflatedVertices[2];
                v[1] = inflatedVertices[3];
                v[2] = inflatedVertices[0];
+               tx0 = bitmap.width, ty0 = bitmap.height, tx1 = 0, ty1 = bitmap.height, tx2 = 0, ty2 = 0;
+               if (poly.uvs !== undefined)
+               {
+                  tx0 = bitmap.width * poly.uvs[4]; ty0 = bitmap.height * poly.uvs[5];
+                  tx1 = bitmap.width * poly.uvs[6]; ty1 = bitmap.height * poly.uvs[7];
+                  tx2 = bitmap.width * poly.uvs[0]; ty2 = bitmap.height * poly.uvs[1];
+               }
                ctx.save();
-               fRenderTriangle.call(this, v, bitmap.width, bitmap.height, 0, bitmap.height, 0, 0);
+               fRenderTriangle.call(this, v, tx0, ty0, tx1, ty1, tx2, ty2);
                ctx.restore();
 
-               // apply optionally fill style to shade and light the texture image
+               // apply optional color fill to shade and light the texture image
                if (fillStyle !== null)
                {
                   ctx.beginPath();

@@ -87,16 +87,38 @@ function onloadHandler()
    };
    scene.graph.push(fnGenerateStarfield(500,2000));
 
-   // particle emitters
-   // TODO: firework bitmap effect - sparkle/flicker etc.
-   //       - is a firework an emitter that itself has physics, is shot up into the air and eventually explodes
-   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(255,128,140,1)", "rgba(255,128,160,0)"));
-   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(128,255,140,1)", "rgba(128,255,160,0)"));
-   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(128,140,255,1)", "rgba(128,160,255,0)"));
-   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(255,128,255,1)", "rgba(255,128,255,0)"));
-   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(255,255,140,1)", "rgba(255,255,160,0)"));
-   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(128,255,255,1)", "rgba(160,255,255,0)"));
+   // generate sparkle bitmap
+   var fnGenerateBitmap = function fnGenerateBitmap(size, color) {
+      var buffer = document.createElement('canvas');
+      buffer.width = buffer.height = size;
+      var w = size / 2, ww = w - (size / 8);
+      var ctx = buffer.getContext('2d');
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      for (var i=0; i<128; i++)
+      {
+         ctx.moveTo(w, w);
+         ctx.lineTo(Math.cos(Rnd(TWOPI))*ww + w, Math.sin(Rnd(TWOPI))*ww + w);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      var img = new Image();
+      img.src = buffer.toDataURL("image/png");
+      return img;
+   };
 
+   // firework bitmap effect - sparkle/flicker etc.
+   //  - is a firework an emitter that itself has physics, is shot up into the air and eventually explodes
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(16, "rgba(128,64,32,1)", "rgba(128,64,32,0)"));
+   bitmaps.push(fnGenerateBitmap(32, "rgba(255,128,160,0.2)"));
+   bitmaps.push(fnGenerateBitmap(32, "rgba(128,255,160,0.2)"));
+   bitmaps.push(fnGenerateBitmap(32, "rgba(128,160,255,0.2)"));
+   bitmaps.push(fnGenerateBitmap(32, "rgba(255,128,255,0.2)"));
+   bitmaps.push(fnGenerateBitmap(32, "rgba(255,255,160,0.2)"));
+   bitmaps.push(fnGenerateBitmap(32, "rgba(160,255,255,0.2)"));
+   bitmaps.push(fnGenerateBitmap(32, "rgba(255,255,255,0.2)"));
+
+   // rotate the camera around the scene
    scene.onCamera(function(position, lookAt, up) {
       var rotMatrix = mat4.create();
       mat4.rotateY(rotMatrix, rotMatrix, Math.sin(Date.now()/10000)*RADIANS*360);
@@ -107,11 +129,10 @@ function onloadHandler()
    scene.triggerHandlers.push({
       trigger: function() {
          // randomly add new emitters
-         //if (Math.random() > 0.97)
          if (emit)
          {
             emit = false;
-            // TODO: different types of firework emitters
+            // TODO: different types of firework emitters??
             var emitter = Phoria.EmitterEntity.create({
                position: {x:Rnd(-20)+10, y:0, z:Rnd(-20)+10},
                positionRnd: {x:0.12+Rnd(0.05), y:0.12+Rnd(0.05), z:0.12+Rnd(0.05)},
@@ -123,22 +144,36 @@ function onloadHandler()
                gravity: true,
                style: {
                   compositeOperation: "lighter",
+                  linewidth: 12 + ~~Rnd(4),
+                  // start with the sprite for a rocket engine effect
                   shademode: "sprite",
-                  linewidth: 5 + ~~Rnd(5),
-                  sprite: bitmaps[~~Rnd(6)]
+                  sprite: bitmaps[0]
+               },
+               onParticle: function(particle) {
+                  // add custom render method to particle - randomly rotating sprite effect
+                  // not actually used until the 'callback' sprite mode is set later
+                  particle.onRender(function(ctx, x, y, w) {
+                     ctx.translate(x, y);
+                     ctx.rotate(Math.random(TWOPI));
+                     ctx.drawImage(this.style.sprite, -w, -w, w+w, w+w);
+                  });
                }
             });
             var emitterHandle = new Phoria.PhysicsEntity();
             emitterHandle.createdon = Date.now();
-            emitterHandle.explode = Rnd(500) + 500;
+            emitterHandle.explode = Rnd(300) + 300;
             emitterHandle.onScene(function() {
                if (!this.exploded && Date.now() - this.createdon > this.explode)
                {
                   this.exploded = true;
-                  emitter.velocity = {x:0, y:0, z:0};
-                  emitter.velocityRnd = {x:0.4+Rnd(0.02), y:0.4+Rnd(0.02), z:0.4+Rnd(0.02)};
+                  emitter.velocity = {x:0, y:-0.1, z:0};
+                  emitter.velocityRnd = {x:0.2+Rnd(0.1), y:0.2+Rnd(0.1), z:0.2+Rnd(0.1)};
                   emitter.gravity = false;
                   emitter.rate = 400 + ~~Rnd(200);
+
+                  // change sprite style to star sparkle effect
+                  emitter.style.shademode = "callback";
+                  emitter.style.sprite = bitmaps[~~Rnd(bitmaps.length - 1) + 1];
                }
                if (Date.now() - this.createdon > this.explode+200)
                {
@@ -156,7 +191,7 @@ function onloadHandler()
                   }
                }
             });
-            emitterHandle.impulse({x:0, y:1350+Rnd(300), z:0});
+            emitterHandle.impulse({x:0, y:1700+Rnd(300), z:0});
             emitterHandle.children.push(emitter);
             scene.graph.push(emitterHandle);
          }
@@ -175,6 +210,13 @@ function onloadHandler()
    };
 
    // key binding
+   document.addEventListener('click', function(e) {
+      emit = true;
+   }, false);
+   document.addEventListener("touchend", function(e) {
+      e.preventDefault();
+      emit = true;
+   }, false);
    document.addEventListener('keydown', function(e) {
       switch (e.keyCode)
       {
@@ -194,7 +236,7 @@ function onloadHandler()
    </head>
    
    <body style="background-color: #000">
-      <div style="z-index:100;position:absolute;width:100%"><div style="color:#fff;text-align:center;font-family:monospace">Press SPACE to launch a firework!</div></div>
+      <div style="z-index:100;position:absolute;width:100%"><div style="color:#fff;text-align:center;font-family:monospace">Press SPACE or click to launch a firework!</div></div>
       <canvas id="canvas" style="background-color: #000"></canvas>
    </body>
 </html>
