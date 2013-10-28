@@ -15,6 +15,8 @@ http://www.kevs3d.co.uk/dev/phoria/test0.html - test 0 - basic cube on grid
 
 http://www.kevs3d.co.uk/dev/phoria/test0t.html - test 0t - textured cube
 
+http://www.kevs3d.co.uk/dev/phoria/test0uv.html - test 0uv - UV coordinates texturing
+
 http://www.kevs3d.co.uk/dev/phoria/test0k.html - test 0k - WASD and arrow keys move around scene
 
 http://www.kevs3d.co.uk/dev/phoria/test1.html - test 1 - animated point lights around a cube
