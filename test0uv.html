@@ -117,13 +117,19 @@ function init()
          specular: 64
       }
    });
-   sphere.textures.push(bitmaps[1]);
    for (var i=0; i<sphere.polygons.length; i++)
    {
       sphere.polygons[i].texture = 0;
    }
    sphere.translateY(6);
-   scene.graph.push(sphere);
+   sphere.translateX(2);
+   var sphere_plain = new Phoria.Entity();
+   Phoria.Util.combine(sphere_plain, sphere);
+   sphere_plain.style.shademode = "plain";
+   sphere_plain.translateX(-4);
+   sphere.textures.push(bitmaps[1]);
+   sphere_plain.textures.push(bitmaps[1]);
+   scene.graph.push(sphere, sphere_plain);
 
    scene.graph.push(Phoria.DistantLight.create({
       direction: {x:0, y:-1.5, z:1}
@@ -136,7 +142,8 @@ function init()
          // rotate local matrix of the cube
          cube.rotateY(0.5*RADIANS);
          pyramid.rotateY(-0.25*RADIANS);
-         sphere.rotateY(0.25*RADIANS);
+         sphere.rotateY(-0.25*RADIANS);
+         sphere_plain.rotateY(0.25*RADIANS);
          
          // execute the model view 3D pipeline and render the scene
          scene.modelView();

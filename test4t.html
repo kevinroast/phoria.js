@@ -25,19 +25,7 @@ window.addEventListener('load', onloadHandler, false);
 var bitmaps = [];
 function onloadHandler()
 {
-   var buffer = document.createElement('canvas'),
-       size = 32,
-       width = size << 1;
-   buffer.width = buffer.height = width;
-   var ctx = buffer.getContext('2d');
-   var radgrad = ctx.createRadialGradient(size, size, size >> 1, size, size, size);  
-   radgrad.addColorStop(0, "rgba(128,64,32,1)");
-   radgrad.addColorStop(1, "rgba(128,64,32,0)");
-   ctx.fillStyle = radgrad;
-   ctx.fillRect(0, 0, width, width);
-   var img = new Image();
-   img.src = buffer.toDataURL("image/png");
-   bitmaps.push(img);
+   bitmaps.push(Phoria.Util.generateRadialGradientBitmap(32, "rgba(128,64,32,1)", "rgba(128,64,32,0)"));
    
    // get the canvas DOM element and the 2D drawing context
    var canvas = document.getElementById('canvas');

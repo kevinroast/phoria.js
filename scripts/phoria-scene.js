@@ -421,7 +421,9 @@
                   }
                   
                   // sort the object before any further transformations
-                  if (obj.style.shademode === "lightsource")
+                  // solid objects always need sorting as each poly can be a different shade/texture
+                  // wireframe and points objects will not be sorted if the "plain" shademode is used
+                  if (obj.style.drawmode === "solid" || obj.style.shademode === "lightsource")
                   {
                      switch (obj.style.drawmode)
                      {
