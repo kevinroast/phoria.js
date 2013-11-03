@@ -492,11 +492,12 @@
                      // normal lighting transformation
                      if (obj.polygons.length !== 0)
                      {
-                        var matNormals = matLocal;
-                        // NOTE: have a flag on scene for "transposedNormalMatrix..."?
-                        // invert and transpose the view matrix - for correct normal scaling?
-                        //mat4.invert(mat4.clone(matLocal), matLocal);
-                        //mat4.transpose(matNormals, matNormals);
+                        // NOTE: have a flag on scene for "transposedNormalMatrix..."? - i.e. make it optional...
+
+                        // invert and transpose the view matrix - for correct normal scaling
+                        var matNormals = mat4.invert(mat4.clone(matLocal), matLocal);
+                        mat4.transpose(matNormals, matNormals);
+                        //var matNormals = matLocal;
                         
                         switch (obj.style.shademode)
                         {

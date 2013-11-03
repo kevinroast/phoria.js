@@ -192,6 +192,43 @@
       },
 
       /**
+       * Inflate the vertices of a polygon - see inflatePolygonFull() below for a richer impl - this
+       * algorithm is not quite as neat and suffers when the camera lines up exactly with perpendicular
+       * edges - however it is much, much faster.
+       */
+      inflatePolygon: function inflatePolygon(vertices, coords, pixels)
+      {
+         pixels = pixels || 0.5;
+         var inflatedVertices = new Array(vertices.length);
+         for (var i=0; i<vertices.length; i++)
+         {
+            inflatedVertices[i] = [ coords[vertices[i]][0], coords[vertices[i]][1] ];
+         }
+         for (var i=0, j=vertices.length,k,x1,y1,x2,y2,dx,dy,len; i<j; i++)
+         {
+            k = (i < j - 1) ? (i+1) : 0;
+            x1 = inflatedVertices[i][0];
+            y1 = inflatedVertices[i][1];
+            x2 = inflatedVertices[k][0];
+            y2 = inflatedVertices[k][1];
+            var x = x2 - x1, y = y2 - y1,
+                det = x * x + y * y, idet;
+
+            if (det === 0) det === EPSILON;
+
+            idet = pixels / Math.sqrt(det);
+
+            x *= idet; y *= idet;
+
+            inflatedVertices[i][0] -= x;
+            inflatedVertices[i][1] -= y;
+            inflatedVertices[k][0] += x;
+            inflatedVertices[k][1] += y;
+         }
+         return inflatedVertices;
+      },
+
+      /**
        * Inflate polygon by 0.5 screen pixels to cover cracks generates by the canvas 2D shape fill convention.
        *  see http://stackoverflow.com/questions/3749678/expand-fill-of-convex-polygon
        *  and http://stackoverflow.com/questions/1109536/an-algorithm-for-inflating-deflating-offsetting-buffering-polygons
@@ -200,8 +237,9 @@
        * techniques commonly used to hide the polygon cracks. Also the multiple fill or fill then stroke techniques will not
        * work with textured polygons.
        */
-      inflatePolygon: function inflatePolygon(vertices, coords)
+      inflatePolygonFull: function inflatePolygonFull(vertices, coords, pixels)
       {
+         pixels = pixels || 0.5;
          // generate vertices of parallel edges
          var pedges = [], inflatedVertices = new Array(vertices.length);
          for (var i=0, j=vertices.length, x1,y1,x2,y2,dx,dy,len; i<j; i++)
@@ -228,8 +266,8 @@
             dy /= len;
             
             // multiply by the distance to the parallel edge
-            dx *= 0.5;
-            dy *= 0.5;
+            dx *= pixels;
+            dy *= pixels;
             
             // generate and store parallel edge
             pedges.push({x: x1 + dx, y: y1 + dy});
@@ -588,7 +626,6 @@
             
             // we can only deal with triangles for texturing - a quad must be split into two triangles
             // TODO: needs a triangle subdivision algorithm for > 4 verticies
-            var inflatedVertices = this.inflatePolygon(vertices, coords);
             if (vertices.length === 3)
             {
                tx0 = 0, ty0 = 0, tx1 = bitmap.width, ty1 = 0, tx2 = bitmap.width, ty2 = bitmap.height;
@@ -598,6 +635,8 @@
                   tx1 = bitmap.width * poly.uvs[2]; ty1 = bitmap.height * poly.uvs[3];
                   tx2 = bitmap.width * poly.uvs[4]; ty2 = bitmap.height * poly.uvs[5];
                }
+               // TODO: Chrome does not need the texture poly inflated!
+               var inflatedVertices = this.inflatePolygon(vertices, coords, 0.5);
                fRenderTriangle.call(this, inflatedVertices, tx0, ty0, tx1, ty1, tx2, ty2);
                // apply optional color fill to shade and light the texture image
                if (fillStyle !== null)
@@ -615,12 +654,11 @@
                   tx2 = bitmap.width * poly.uvs[4]; ty2 = bitmap.height * poly.uvs[5];
                }
                ctx.save();
-               fRenderTriangle.call(this, inflatedVertices.slice(0, 3), tx0, ty0, tx1, ty1, tx2, ty2);
+               // TODO: Chrome does not need the texture poly inflated!
+               var inflatedVertices = this.inflatePolygon(vertices.slice(0, 3), coords, 0.5);
+               fRenderTriangle.call(this, inflatedVertices, tx0, ty0, tx1, ty1, tx2, ty2);
                ctx.restore();
-               var v = new Array(3);
-               v[0] = inflatedVertices[2];
-               v[1] = inflatedVertices[3];
-               v[2] = inflatedVertices[0];
+
                tx0 = bitmap.width, ty0 = bitmap.height, tx1 = 0, ty1 = bitmap.height, tx2 = 0, ty2 = 0;
                if (poly.uvs !== undefined)
                {
@@ -629,12 +667,20 @@
                   tx2 = bitmap.width * poly.uvs[0]; ty2 = bitmap.height * poly.uvs[1];
                }
                ctx.save();
-               fRenderTriangle.call(this, v, tx0, ty0, tx1, ty1, tx2, ty2);
+               var v = new Array(3);
+               v[0] = vertices[2];
+               v[1] = vertices[3];
+               v[2] = vertices[0];
+               // TODO: Chrome does not need the texture poly inflated!
+               inflatedVertices = this.inflatePolygon(v, coords, 0.5);
+               fRenderTriangle.call(this, inflatedVertices, tx0, ty0, tx1, ty1, tx2, ty2);
                ctx.restore();
 
                // apply optional color fill to shade and light the texture image
                if (fillStyle !== null)
                {
+                  // TODO: better to inflate again or fill two tris as above?
+                  inflatedVertices = this.inflatePolygon(vertices, coords, 0.75);
                   ctx.beginPath();
                   ctx.moveTo(inflatedVertices[0][0], inflatedVertices[0][1]);
                   for (var i=1, j=inflatedVertices.length; i<j; i++)
@@ -648,10 +694,11 @@
          }
          else
          {
+            // solid colour fill
             if (obj.style.fillmode === "inflate")
             {
                // inflate the polygon screen coords to cover the 0.5 pixel cracks between canvas fill()ed polygons
-               var inflatedVertices = this.inflatePolygon(vertices, coords);
+               var inflatedVertices = this.inflatePolygon(vertices, coords, 0.5);
                ctx.beginPath();
                ctx.moveTo(inflatedVertices[0][0], inflatedVertices[0][1]);
                for (var i=1, j=vertices.length; i<j; i++)

@@ -189,7 +189,7 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
          fillmode: "inflate",
          linewidth: 1.0,
          linescale: 0.0,
-         hiddenangle: -PI,
+         hiddenangle: -PI/2,
          doublesided: false
       };
       
@@ -217,7 +217,7 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
     *       fillmode: "inflate",       // one of "fill", "filltwice", "inflate", "fillstroke", "hiddenline"
     *       linewidth: 1.0,            // wireframe line thickness
     *       linescale: 0.0,            // depth based scaling factor for wireframes - can be zero for no scaling
-    *       hiddenangle: 0.0,          // hidden surface test angle - generally between -PI and 0
+    *       hiddenangle: 0.0,          // hidden surface test angle - generally between -PI and 0 - depends on perspective fov
     *       doublesided: false
     *    }
     *    onRender: function() {...}
