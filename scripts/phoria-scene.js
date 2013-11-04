@@ -30,7 +30,7 @@
       };
       
       this.perspective = {
-         // vertical field-of-view in degrees NOTE: converted to radians for mat4.perspective()
+         // vertical field-of-view in degrees NOTE: converted to Phoria.RADIANS for mat4.perspective()
          fov: 35.0,
          // aspect ratio of the view plane
          aspect: 1.0,
@@ -174,6 +174,14 @@
       {
          scene.onCamera = scene.onCamera.toString();
       }*/
+      for (var p in scene)
+      {
+         if (scene.hasOwnProperty(p) && p.indexOf("_") === 0)
+         {
+            // remove private property/function before serialisation
+            delete scene[p];
+         }
+      }
       if (scene.graph)
       {
          var fnProcessEntities = function(entities) {
@@ -186,14 +194,10 @@
                   if (e.hasOwnProperty(p))
                   {
                      // if property name matches "on*Handlers" it is an event handler function list by convention
-
-                     // TODO: whoops! the *add* event handler methods are called "on..."! e.g. onCamera on a live scene - rename??? or not serialise???
-                     // if not serialise, probably still enough for good debug dump... - also could have "debug" flag that *Does* output private props?
-
-                     /*if (p.indexOf("on") === 0 && typeof e[p] === "function")
+                     if (p.indexOf("on") === 0 && e[p] instanceof Array)
                      {
                         e[p] = e[p].toString();
-                     }*/
+                     }
 
                      // TODO: modify all Phoria entity classes to correctly mark private vars with "_"
 
@@ -202,14 +206,23 @@
                         // remove private property/function before serialisation
                         delete e[p];
                      }
-                     if (p === "children" && e[p] instanceof Array)
+                     switch (p)
                      {
-                        fnProcessEntities(e[p]);
+                        case "textures":
+                           delete e[p];
+                           break;
+                        
+                        case "children":
+                           if (e[p] instanceof Array)
+                           {
+                              fnProcessEntities(e[p]);
+                           }
+                           break;
                      }
                   }
                }
 
-               // TODO: need to serialise the Entity type into the object structure
+               // TODO: need to serialise the Entity type into the object structure!
             }
          };
          fnProcessEntities(scene.graph);
@@ -349,7 +362,7 @@
          var perspective = mat4.create();
          mat4.perspective(
             perspective,
-            -this.perspective.fov * RADIANS,
+            -this.perspective.fov * Phoria.RADIANS,
             this.perspective.aspect,
             this.perspective.near,
             this.perspective.far);
@@ -373,7 +386,7 @@
                // used to quickly lookup entities in event handlers without walking child lists etc.
                if (obj.id) entityById[obj.id] = obj;
                
-               // multiply local with parent matrix to combine affine transformation
+               // multiply local with parent matrix to combine affine transformations
                var matLocal = obj.matrix;
                if (matParent)
                {
@@ -408,13 +421,13 @@
                      verts = obj.points[v];
                      vec = vec4.set(obj._worldcoords[v], verts.x, verts.y, verts.z, 1.0);
                      
-                     // local object transformation -> world
+                     // local object transformation -> world space
                      // skip local transform if matrix not present
                      // else store locally transformed vec4 world points
                      if (matLocal) vec4.transformMat4(vec, vec, matLocal);
                   }
                   
-                  // multiply by camera matrix to generate world coords
+                  // multiply by camera matrix to generate camera space coords
                   for (var v=0; v<len; v++)
                   {
                      vec4.transformMat4(obj._coords[v], obj._worldcoords[v], camera);
@@ -469,7 +482,7 @@
                      w = vec[3];
                      
                      // stop divide by zero
-                     if (w === 0) w = EPSILON;
+                     if (w === 0) w = Phoria.EPSILON;
                      
                      // is this vertex outside the clipping boundries for the perspective frustum?
                      objClip += (obj._clip[v] = (vec[0] > w+clipOffset || vec[0] < -w-clipOffset ||
@@ -490,14 +503,12 @@
                   if (objClip !== len)
                   {
                      // normal lighting transformation
-                     if (obj.polygons.length !== 0)
+                     if (obj.style.drawmode === "solid" && obj.polygons.length !== 0)
                      {
-                        // NOTE: have a flag on scene for "transposedNormalMatrix..."? - i.e. make it optional...
-
+                        // TODO: have a flag on scene for "transposedNormalMatrix..." - i.e. make it optional?
                         // invert and transpose the view matrix - for correct normal scaling
                         var matNormals = mat4.invert(mat4.clone(matLocal), matLocal);
                         mat4.transpose(matNormals, matNormals);
-                        //var matNormals = matLocal;
                         
                         switch (obj.style.shademode)
                         {
@@ -509,15 +520,17 @@
                               {
                                  if (!obj.polygons[i]._worldnormal) obj.polygons[i]._worldnormal = vec4.create();
                                  
-                                 // normal transformation -> world
+                                 // normal transformation -> world space
                                  normal = obj.polygons[i].normal;
                                  wnormal = obj.polygons[i]._worldnormal;
-                                 vec4.transformMat4(wnormal, normal, matNormals);
-                                 vec4.normalize(wnormal, wnormal);
+                                 // use vec3 to ensure normal directional component is not modified
+                                 vec3.transformMat4(wnormal, normal, matNormals);
+                                 vec3.normalize(wnormal, wnormal);
                               }
                               break;
                            }
-                           /*case "gouraud":
+                           /*
+                           case "gouraud":
                            {
                               // transform each vertex normal
                               for (var i=0, normal, wnormal; i<len; i++)
@@ -528,7 +541,8 @@
                                  vec4.normalize(wnormal, wnormal);
                               }
                               break;
-                           }*/
+                           }
+                           */
                         }
                      }
                      

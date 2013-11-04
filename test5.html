@@ -75,13 +75,13 @@ function init()
          sortmode: "unsorted"
       }
    }));
-   scene.graph.push(new Phoria.DistantLight());
    
    // wall plane object - constructed in-place to avoid rotations of texture coordinates
    var wall = Phoria.Entity.create({
       points: [{x:10, y:0, z:-5},{x:10, y:10, z:-5},{x:10, y:10, z:5},{x:10, y:0, z:5}],
       polygons: [{vertices:[2,1,0,3]}],
       style: {
+         shademode: "plain",
          doublesided: true
       }
    });
@@ -158,13 +158,6 @@ function init()
       }
    });
    cube.children.push(emitter);
-
-   // add a light
-   scene.graph.push(Phoria.DistantLight.create({
-      color: [1,1,1],
-      intensity: 0.5,
-      direction: {x:2, y:-5, z:5}
-   }));
 
    var pause = false;
    var fnAnimate = function() {

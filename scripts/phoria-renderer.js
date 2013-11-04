@@ -74,8 +74,8 @@
             
             if (light instanceof Phoria.DistantLight)
             {
-               // Distant lights have no "position" - they simply light the world with parallel rays from an
-               // infinitely distant location - closest example is light from the sun when overhead
+               // Distant lights have no "position", just a direction - they light the world with parallel rays
+               // from an infinitely distant location - closest example is light from the sun when overhead
                // note that light worlddirection is precalculated as negative.
                var dotVP = vec3.dot(normal, light.worlddirection);
                
@@ -214,7 +214,7 @@
             var x = x2 - x1, y = y2 - y1,
                 det = x * x + y * y, idet;
 
-            if (det === 0) det === EPSILON;
+            if (det === 0) det === Phoria.EPSILON;
 
             idet = pixels / Math.sqrt(det);
 
@@ -452,7 +452,7 @@
             case "plain":
             {
                ctx.beginPath();
-               ctx.arc(coord[0], coord[1], w, 0, TWOPI, true);
+               ctx.arc(coord[0], coord[1], w, 0, Phoria.TWOPI, true);
                ctx.closePath();
                ctx.fill();
                break;
@@ -485,7 +485,7 @@
                                         Math.min(Math.ceil(rgb[1] * obj.style.color[1]),255) + "," +
                                         Math.min(Math.ceil(rgb[2] * obj.style.color[2]),255) + ")";
                ctx.beginPath();
-               ctx.arc(coord[0], coord[1], w, 0, TWOPI, true);
+               ctx.arc(coord[0], coord[1], w, 0, Phoria.TWOPI, true);
                ctx.closePath();
                ctx.fill();
                break;
@@ -554,7 +554,7 @@
          {
             case "plain":
             {
-               if (poly.texture === undefined)
+               if (obj.style.texture === undefined && poly.texture === undefined)
                {
                   fillStyle = color[0] + "," + color[1] + "," + color[2];
                }
@@ -578,9 +578,9 @@
          
          // render the polygon - textured or one of the solid fill modes
          ctx.save();
-         if (poly.texture !== undefined)
+         if (obj.style.texture !== undefined || poly.texture !== undefined)
          {
-            var bitmap = obj.textures[ poly.texture ],
+            var bitmap = obj.textures[ poly.texture !== undefined ? poly.texture : obj.style.texture ],
                 tx0, ty0, tx1, ty1, tx2, ty2;
             var fRenderTriangle = function(vs, sx0, sy0, sx1, sy1, sx2, sy2)
             {

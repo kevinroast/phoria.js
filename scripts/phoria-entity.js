@@ -158,7 +158,7 @@
    };
 })();
 
-var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array;
+Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array;
 
 (function() {
    "use strict";
@@ -189,7 +189,7 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
          fillmode: "inflate",
          linewidth: 1.0,
          linescale: 0.0,
-         hiddenangle: -PI/2,
+         hiddenangle: -Phoria.PIO2,
          doublesided: false
       };
       
@@ -218,7 +218,8 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
     *       linewidth: 1.0,            // wireframe line thickness
     *       linescale: 0.0,            // depth based scaling factor for wireframes - can be zero for no scaling
     *       hiddenangle: 0.0,          // hidden surface test angle - generally between -PI and 0 - depends on perspective fov
-    *       doublesided: false
+    *       doublesided: false,        // true to always render polygons - i.e. do not perform hidden surface test
+    *       texture: undefined         // default texture index to use for polygons if not specified - e.g. when UVs are used
     *    }
     *    onRender: function() {...}
     * }
@@ -393,7 +394,7 @@ var CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Array
          }
          if (this._clip === null || this._clip.length < len)
          {
-            this._clip = new CLIP_ARRAY_TYPE(len);
+            this._clip = new Phoria.CLIP_ARRAY_TYPE(len);
          }
       },
       
@@ -777,12 +778,13 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
    "use strict";
 
    /**
-    * DistantLight models an infinitely distant light that has no position only a direction from which light eminates.
+    * DistantLight models an infinitely distant light that has no position only a normalised direction from which light eminates.
     */
    Phoria.DistantLight = function()
    {
       Phoria.DistantLight.superclass.constructor.call(this);
       
+      // direction should be a normalised vector
       this.direction = {x:0, y:0, z:1};
       
       // add scene handler to transform the light direction into world direction
@@ -801,7 +803,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
       Phoria.BaseEntity.create(desc, e);
       if (desc.color) e.color = desc.color;
       if (desc.intensity) e.intensity = desc.intensity;
-      if (desc.direction) e.direction = desc.direction;
+      if (desc.direction) e.direction = vec3.toXYZ(vec3.normalize(e.direction, vec3.fromXYZ(desc.direction)));
       
       return e;
    };
@@ -811,7 +813,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
       direction: null,
       worlddirection: null,
       
-      transformToScene: function transformToScene(scene, matLocal, time)
+      transformToScene: function transformToScene()
       {
          this.worlddirection = vec3.fromValues(
             -this.direction.x,

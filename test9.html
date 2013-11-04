@@ -98,7 +98,7 @@ function onloadHandler()
       for (var i=0; i<128; i++)
       {
          ctx.moveTo(w, w);
-         ctx.lineTo(Math.cos(Rnd(TWOPI))*ww + w, Math.sin(Rnd(TWOPI))*ww + w);
+         ctx.lineTo(Math.cos(Rnd(Phoria.TWOPI))*ww + w, Math.sin(Rnd(Phoria.TWOPI))*ww + w);
       }
       ctx.closePath();
       ctx.stroke();
@@ -121,7 +121,7 @@ function onloadHandler()
    // rotate the camera around the scene
    scene.onCamera(function(position, lookAt, up) {
       var rotMatrix = mat4.create();
-      mat4.rotateY(rotMatrix, rotMatrix, Math.sin(Date.now()/10000)*RADIANS*360);
+      mat4.rotateY(rotMatrix, rotMatrix, Math.sin(Date.now()/10000)*Phoria.RADIANS*360);
       vec4.transformMat4(position, position, rotMatrix);
    });
 
@@ -154,7 +154,7 @@ function onloadHandler()
                   // not actually used until the 'callback' sprite mode is set later
                   particle.onRender(function(ctx, x, y, w) {
                      ctx.translate(x, y);
-                     ctx.rotate(Math.random(TWOPI));
+                     ctx.rotate(Math.random(Phoria.TWOPI));
                      ctx.drawImage(this.style.sprite, -w, -w, w+w, w+w);
                   });
                }

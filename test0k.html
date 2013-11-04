@@ -74,7 +74,7 @@ function init()
    }
    scene.graph.push(cube);
    scene.graph.push(Phoria.DistantLight.create({
-      direction: {x:0, y:-1.5, z:1}
+      direction: {x:0, y:-0.5, z:1}
    }));
 
    var pause = false;
@@ -82,7 +82,7 @@ function init()
       if (!pause)
       {
          // rotate local matrix of the cube
-         cube.rotateY(0.5*RADIANS);
+         cube.rotateY(0.5*Phoria.RADIANS);
          
          // execute the model view 3D pipeline and render the scene
          scene.modelView();
@@ -97,7 +97,7 @@ function init()
 
    /**
     * @param forward {vec3}   Forward movement offset
-    * @param heading {float}  Heading in radians
+    * @param heading {float}  Heading in Phoria.RADIANS
     * @param lookAt {vec3}    Lookat projection offset from updated position
     */
    var fnPositionLookAt = function positionLookAt(forward, heading, lookAt) {
@@ -152,14 +152,14 @@ function init()
             break;
          case 37: // LEFT
             // turn left
-            heading += RADIANS*4;
+            heading += Phoria.RADIANS*4;
             // recalculate lookAt
             // given current camera position, project a lookAt vector along current heading for N units
             fnPositionLookAt(vec3.fromValues(0,0,0), heading, lookAt);
             break;
          case 39: // RIGHT
             // turn right
-            heading -= RADIANS*4;
+            heading -= Phoria.RADIANS*4;
             // recalculate lookAt
             // given current camera position, project a lookAt vector along current heading for N units
             fnPositionLookAt(vec3.fromValues(0,0,0), heading, lookAt);

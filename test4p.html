@@ -36,7 +36,7 @@ function onloadHandler()
    scene.viewport.height = canvas.height;
    scene.onCamera(function(position, lookAt, up) {
       var rotMatrix = mat4.create();
-      mat4.rotateY(rotMatrix, rotMatrix, Math.sin(Date.now()/10000)*RADIANS*360);
+      mat4.rotateY(rotMatrix, rotMatrix, Math.sin(Date.now()/10000)*Phoria.RADIANS*360);
       vec4.transformMat4(position, position, rotMatrix);
    });
    

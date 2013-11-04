@@ -205,14 +205,14 @@ function onloadHandler()
    var rotates = [0,0,0];
    var fnAnimate = function() {2
       // rotate local matrix of an object
-      testCube.rotateY(0.5*RADIANS);
+      testCube.rotateY(0.5*Phoria.RADIANS);
       // translate local matrix of child object - will receive rotation from parent
       childCube.identity().translateY(Math.sin(Date.now() / 1000) + 3);
       // translate visible light objects around the origin - will rotate child Light emitters
       var sine = Math.sin(Date.now() / 500);
-      blueLightObj.identity().rotateY(rotates[0]+=1*RADIANS).translateY(sine);
-      redLightObj.identity().rotateY(rotates[1]+=0.5*RADIANS).translateY(sine);
-      greenLightObj.identity().rotateY(rotates[2]+=1.5*RADIANS).translateY(sine);
+      blueLightObj.identity().rotateY(rotates[0]+=1*Phoria.RADIANS).translateY(sine);
+      redLightObj.identity().rotateY(rotates[1]+=0.5*Phoria.RADIANS).translateY(sine);
+      greenLightObj.identity().rotateY(rotates[2]+=1.5*Phoria.RADIANS).translateY(sine);
       
       // execute the model view 3D pipeline
       scene.modelView();

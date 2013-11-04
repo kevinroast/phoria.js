@@ -54,15 +54,12 @@ function init()
       edges: p.edges,
       polygons: p.polygons,
       style: {
-         shademode: "plain"
+         shademode: "plain",
+         texture: 0
       }
    });
    plane.translateY(-1);
    plane.textures.push(bitmaps[1]);
-   for (var i=0; i<plane.polygons.length; i++)
-   {
-      plane.polygons[i].texture = 0;
-   }
    scene.graph.push(plane);
    
    var c = Phoria.Util.generateUnitCube(2);
@@ -95,12 +92,14 @@ function init()
    var pyramid = Phoria.Entity.create({
       points: p.points,
       edges: p.edges,
-      polygons: p.polygons
+      polygons: p.polygons,
+      style: {
+         texture: 0
+      }
    });
    pyramid.textures.push(bitmaps[0]);
    for (var i=0; i<4; i++)
    {
-      pyramid.polygons[i].texture = 0;
       // test UV coords - select a section of the wall texture for the pyramid faces
       pyramid.polygons[i].uvs = [0.5,0,1,0,0.75,0.5];
    }
@@ -114,13 +113,10 @@ function init()
       style: {
          color: [255,128,64],
          diffuse: 0.5,
-         specular: 64
+         specular: 64,
+         texture: 0
       }
    });
-   for (var i=0; i<sphere.polygons.length; i++)
-   {
-      sphere.polygons[i].texture = 0;
-   }
    sphere.translateY(6);
    sphere.translateX(2);
    var sphere_plain = new Phoria.Entity();
@@ -133,7 +129,8 @@ function init()
    scene.graph.push(sphere, sphere_plain);
 
    scene.graph.push(Phoria.DistantLight.create({
-      direction: {x:0, y:-1.5, z:1}
+      direction: {x:0, y:-1, z:1},
+      intensity: 1.5
    }));
 
    var pause = false;
@@ -141,10 +138,10 @@ function init()
       if (!pause)
       {
          // rotate local matrix of the cube
-         cube.rotateY(0.5*RADIANS);
-         pyramid.rotateY(-0.25*RADIANS);
-         sphere.rotateY(-0.25*RADIANS);
-         sphere_plain.rotateY(0.25*RADIANS);
+         cube.rotateY(0.5*Phoria.RADIANS);
+         pyramid.rotateY(-0.25*Phoria.RADIANS);
+         sphere.rotateY(-0.25*Phoria.RADIANS);
+         sphere_plain.rotateY(0.25*Phoria.RADIANS);
          
          // execute the model view 3D pipeline and render the scene
          scene.modelView();

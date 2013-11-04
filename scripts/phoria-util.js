@@ -4,15 +4,7 @@
  * @date 10th April 2013
  */
 
-// Global constants
-var RADIANS = Math.PI/180.0;
-var PI = Math.PI;
-var TWOPI = Math.PI*2;
-var ONEOPI = 1.0 / Math.PI;
-var PIO2 = Math.PI/2;
-var EPSILON = 0.000001;
-
-// glMatrix library - many small Arrays are faster without the use of Float32Array wrap/conversion
+// init glMatrix library - many small Arrays are faster without the use of Float32Array wrap/conversion
 glMatrix.setMatrixArrayType(Array);
 
 /**
@@ -27,6 +19,16 @@ vec3.fromXYZ = function(xyz) {
    out[1] = xyz.y;
    out[2] = xyz.z;
    return out;
+};
+
+/**
+ * Creates a new xyz object initialized with the given vec3 values
+ *
+ * @param {vec3} 3D vector
+ * @returns {x:0,y:0,z:0} a new xyz object property tuple
+ */
+vec3.toXYZ = function(vec) {
+   return {x:vec[0], y:vec[1], z:vec[2]};
 };
 
 /**
@@ -55,6 +57,15 @@ if (typeof Phoria === "undefined" || !Phoria)
 {
    var Phoria = {};
 }
+
+
+// Global Phoria constants
+Phoria.RADIANS = Math.PI/180.0;
+Phoria.TWOPI = Math.PI*2;
+Phoria.ONEOPI = 1.0/Math.PI;
+Phoria.PIO2 = Math.PI/2;
+Phoria.PIO4 = Math.PI/4;
+Phoria.EPSILON = 0.000001;
 
 
 (function() {
@@ -269,8 +280,10 @@ if (typeof Phoria === "undefined" || !Phoria)
       var v = vec4.fromValues(
          (y1 * z2) - (z1 * y2),
          -((z2 * x1) - (x2 * z1)),
-         (x1 * y2) - (y1 * x2), 0 );
-      return vec4.normalize(v, v);
+         (x1 * y2) - (y1 * x2),
+         0);
+      // use vec3 here to save a pointless multiply * 0 and add op
+      return vec3.normalize(v, v);
    }
    
    /**
@@ -472,7 +485,7 @@ if (typeof Phoria === "undefined" || !Phoria)
          points: [{x:-1*s,y:1*s,z:-1*s}, {x:1*s,y:1*s,z:-1*s}, {x:1*s,y:-1*s,z:-1*s}, {x:-1*s,y:-1*s,z:-1*s},
                   {x:-1*s,y:1*s,z:1*s}, {x:1*s,y:1*s,z:1*s}, {x:1*s,y:-1*s,z:1*s}, {x:-1*s,y:-1*s,z:1*s}],
          edges: [{a:0,b:1}, {a:1,b:2}, {a:2,b:3}, {a:3,b:0}, {a:4,b:5}, {a:5,b:6}, {a:6,b:7}, {a:7,b:4}, {a:0,b:4}, {a:1,b:5}, {a:2,b:6}, {a:3,b:7}],
-         polygons: [{vertices:[0,1,2,3]},{vertices:[1,5,6,2]},{vertices:[5,4,7,6]},{vertices:[4,0,3,7]},{vertices:[0,4,5,1]},{vertices:[2,6,7,3]}]
+         polygons: [{vertices:[0,1,2,3]},{vertices:[1,5,6,2]},{vertices:[5,4,7,6]},{vertices:[4,0,3,7]},{vertices:[4,5,1,0]},{vertices:[3,2,6,7]}]
       };
    }
 

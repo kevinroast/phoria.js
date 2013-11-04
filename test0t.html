@@ -55,9 +55,9 @@ function init()
       edges: plane.edges,
       polygons: plane.polygons,
       style: {
+         shademode: "plain",
          drawmode: "wireframe",
-         linewidth: 0.5,
-         sortmode: "unsorted"
+         linewidth: 0.5
       }
    }));
    var c = Phoria.Util.generateUnitCube();
@@ -73,7 +73,7 @@ function init()
    }
    scene.graph.push(cube);
    scene.graph.push(Phoria.DistantLight.create({
-      direction: {x:0, y:-1.5, z:1}
+      direction: {x:0, y:-0.5, z:1}
    }));
 
    var pause = false;
@@ -81,7 +81,7 @@ function init()
       if (!pause)
       {
          // rotate local matrix of the cube
-         cube.rotateY(0.5*RADIANS);
+         cube.rotateY(0.5*Phoria.RADIANS);
          
          // execute the model view 3D pipeline and render the scene
          scene.modelView();
