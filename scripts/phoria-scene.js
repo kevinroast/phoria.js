@@ -345,7 +345,7 @@
          // another way to do this would be to perform this step manually at the start of an animation loop
          if (this.onCameraHandlers !== null)
          {
-            for (var h in this.onCameraHandlers)
+            for (var h=0; h<this.onCameraHandlers.length; h++)
             {
                this.onCameraHandlers[h].call(this, this._cameraPosition, cameraLookat, cameraUp);
             }
@@ -398,7 +398,7 @@
                // object construction - there can be multiple registered per entity
                if (obj.onSceneHandlers !== null)
                {
-                  for (var h in obj.onSceneHandlers)
+                  for (var h=0; h<obj.onSceneHandlers.length; h++)
                   {
                      obj.onSceneHandlers[h].call(obj, this, matLocal, time);
                   }

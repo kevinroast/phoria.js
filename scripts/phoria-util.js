@@ -634,6 +634,208 @@ Phoria.EPSILON = 0.000001;
       img.src = buffer.toDataURL("image/png");
       return img;
    }
+   
+   /**
+    * Make an XHR request for a resource. E.g. for loading a 3D object file format or similar.
+    * 
+    * @param config  JavaScript object describing the url, method, callback and so on for the request:
+    *    {
+    *       url: url                      // url of resource (mandatory)
+    *       method: "GET"                 // HTTP method - default is GET
+    *       overrideMimeType: mimetype    // optional mimetype override for response stream
+    *       requestContentType: mimetype  // optional request Accept content-type
+    *       fnSuccess: function           // success handler function - function(responseText, responseJSON)
+    *       fnFailure: function           // failure handler function - function(responseText, responseJSON)
+    *       data: string                  // data for POST or PUT method
+    *    }
+    */
+   Phoria.Util.request = function request(config)
+   {
+      var req = new XMLHttpRequest();
+      var data = config.data || "";
+      if (config.responseContentType && req.overrideMimeType) req.overrideMimeType(config.responseContentType);
+      req.open(config.method ? config.method : "GET", config.url);
+      if (config.requestContentType) req.setRequestHeader("Accept", config.requestContentType);
+      req.onreadystatechange = function() {
+         if (req.readyState === 4)
+         {
+            if (req.status === 200)
+            {
+               // success - call handler
+               if (config.fnSuccess)
+               {
+                  config.fnSuccess.call(this, req.responseText, req.status);
+               }
+            }
+            else
+            {
+               // failure - call handler
+               if (config.fnFailure)
+               {
+                  config.fnFailure.call(this, req.responseText, req.status);
+               }
+               else
+               {
+                  // default error handler
+                  alert(req.status + "\n\n" + req.responseText);
+               }
+            }
+         }
+      };
+      try
+      {
+         if (config.method === "POST" || config.method === "PUT")
+         {
+            req.send(data);
+         }
+         else
+         {
+            req.send(null);
+         }
+      }
+      catch (e)
+      {
+         alert(e.message);
+      }
+   }
+   
+   /**
+    * Geometry importer for Wavefront (.obj) text 3D file format. The url is loaded via an XHR
+    * request and a callback function is executed on completion of the import and processing.
+    * 
+    * @param config  JavaScript object describing the url and configuration params for the import:
+    *    {
+    *       url: url             // url of resource (mandatory)
+    *       fnSuccess: function  // callback function to execute once object is loaded - function({points:[], polygons:[]})
+    *       fnFailure: function  // optional callback function to execute if an error occurs
+    *       scale: 1.0           // optional scaling factor - 1.0 is the default
+    *       scaleTo: 1.0         // optional automatically scale object to a specific size (TODO: implement)
+    *       center: false        // optional centering of imported geometry to the origin (TODO: implement)
+    *       reorder: false       // true to switch order of poly vertices if back-to-front ordering
+    *    }
+    */
+   Phoria.Util.importGeometryWavefront = function importGeometryWavefront(config)
+   {
+      var vertex = [], faces = [];
+      var re = /\s+/;   // 1 or more spaces can separate tokens within a line
+      var scale = config.scale || 1;
+      var minx, miny, minz, maxx, maxy, maxz;
+      minx = miny = minz = maxx = maxy = maxz = 0;
+      
+      Phoria.Util.request({
+         url: config.url,
+         fnSuccess: function(data) {
+            var lines = data.split('\n'); // split line by line
+            for (var i = 0;i < lines.length;i++)
+            {
+               var line = lines[i].split(re);
+               
+               switch (line[0])
+               {
+                  case 'v':
+                  {
+                     var x = parseFloat(line[1])*scale,
+                         y = parseFloat(line[2])*scale,
+                         z = parseFloat(line[3])*scale;
+                     vertex.push({'x': x, 'y': y, 'z': z});
+                     if (x < minx) minx = x;
+                     else if (x > maxx) maxx = x;
+                     if (y < miny) miny = y;
+                     else if (y > maxy) maxy = y;
+                     if (z < minz) minz = z;
+                     else if (z > maxz) maxz = z;
+                  }
+                  break;
+                  
+                  case 'f':
+                  {
+                     var face = lines[i].split(re);
+                     face.splice(0, 1); // remove "f"
+                     var vertices = [];
+                     for (var j = 0,vindex; j < face.length; j++)
+                     {
+                        vindex = face[config.reorder ? face.length - j - 1 : j];
+                        // deal with /r/n line endings
+                        if (vindex.length !== 0)
+                        {
+                           // OBJ format vertices are indexed from 1
+                           vertices.push(parseInt(vindex.split('/')[0]) - 1);
+                        }
+                     }
+                     faces.push({'vertices': vertices});
+                     // TODO: texture coords
+                  }
+                  break;
+               }
+            }
+            if (config.center)
+            {
+               // calculate centre displacement for object and adjust each point
+               var cdispx = (minx + maxx)/2.0,
+                   cdispy = (miny + maxy)/2.0,
+                   cdispz = (minz + maxz)/2.0;
+               for (var i=0; i<vertex.length; i++)
+               {
+                  vertex[i].x -= cdispx;
+                  vertex[i].y -= cdispy;
+                  vertex[i].z -= cdispz;
+               }
+            }
+            if (config.scaleTo)
+            {
+               // calc total size multipliers using max object limits and scale
+               var sizex = maxx - minx,
+                   sizey = maxy - miny,
+                   sizez = maxz - minz;
+         
+               // find largest of multipliers and use it as scale factor
+               var scalefactor = 0.0;
+               if (sizey > sizex) 
+               {
+                  if (sizez > sizey) 
+                  {
+                     // use sizez
+                     scalefactor = 1.0 / (sizez/config.scaleTo);
+                  }
+                  else
+                  {
+                     // use sizey
+                     scalefactor = 1.0 / (sizey/config.scaleTo);
+                  }
+               }
+               else if (sizez > sizex) 
+               {
+                  // use sizez
+                  scalefactor = 1.0 / (sizez/config.scaleTo);
+               }
+               else 
+               {
+                  // use sizex
+                  scalefactor = 1.0 / (sizex/config.scaleTo);
+               }
+               for (var i=0; i<vertex.length; i++)
+               {
+                  vertex[i].x *= scalefactor;
+                  vertex[i].y *= scalefactor;
+                  vertex[i].z *= scalefactor;
+               }
+            }
+            if (config.fnSuccess)
+            {
+               config.fnSuccess.call(this, {
+                  points: vertex,
+                  polygons: faces
+               });
+            }
+         },
+         fnFailure: function(error) {
+            if (config.fnFailure)
+            {
+               config.fnFailure.call(this, error);
+            }
+         }
+      });
+   }
 
 })();
 

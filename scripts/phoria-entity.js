@@ -732,7 +732,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
                // execute any callbacks interested in the particle creation
                if (this.onParticleHandlers !== null)
                {
-                  for (var h in this.onParticleHandlers)
+                  for (var h=0; h<this.onParticleHandlers.length; h++)
                   {
                      this.onParticleHandlers[h].call(this, particle);
                   }
