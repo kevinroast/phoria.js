@@ -312,65 +312,6 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
       },
       
       /**
-       * Calculate and store the vertex normals for the entity. Note! dependent on generatePolygonNormals()
-       * TODO: this is not used yet for anything - and has not been tested at all!
-       */
-      generateVertexNormals: function generateVertexNormals()
-      {
-         if (this.polygons)
-         {
-            // For each vertex - find the polygons it is shared by
-            // - examine each poly to find if it contains the vertex index.
-            // NOTE: could optimize by sorting first? then only looking up/down the list a short distance?
-            // Once we have list of vertex to polys, calculate the vertex normal by averaging the polygon normals
-            // it is shared by - store this as the vertex normal.
-            // Transform the vertex normals like other normals during the modelview processing.
-            var points = this.points,
-                polys = this.polygons,
-                vertexToPoly = new Array(points.length);
-            //for (var i=0; i<points.length; i++)
-            //{
-               for (var p=0,verts; p<polys.length; p++)
-               {
-                  verts = polys[p].vertices;
-                  for (var v=0,vp; v<verts.length; v++)
-                  {
-                     //if (verts[v] === i)
-                     //{
-                        vp = vertexToPoly[verts[v]] || [];
-                        vp.push(p);
-                        vertexToPoly[verts[v]] = vp;
-                        //(vertexToPoly[i] || []).push(p);
-                        //break;
-                     //}
-                  }
-               }
-            //}
-            var vertexNormals = new Array(points.length);
-            for (var i=0,list; i<vertexToPoly.length; i++)
-            {
-               list = vertexToPoly[i];
-               if (list)
-               {
-                  for (var p=0,nx=0,ny=0,nz=0,normal; p<list.length; p++)
-                  {
-                     normal = polys[p].normal;
-                     nx += normal[0];
-                     ny += normal[1];
-                     nz += normal[2];
-                  }
-                  nx /= list.length;
-                  ny /= list.length;
-                  nz /= list.length;
-                  // TODO: normalize again?
-                  vertexNormals[i] = vec4.fromValues(nx,ny,nz,0);
-               }
-            }
-            this._vertexNormals = vertexNormals;
-         }
-      },
-      
-      /**
        * Init all the buffers needed by the entity during scene pipeline processing.
        * Buffers are re-allocated if the number of coordinates in the entity changes.
        */

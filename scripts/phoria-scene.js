@@ -245,10 +245,10 @@
       // {Object} dimensions of viewport for NDC->viewport conversion step
       viewport: null,
 
-      // {Array} the flattened, sorted list of entities for rendering a frame of the scene - set by modelView()
+      // @readonly {Array} the flattened, sorted list of entities for rendering a frame of the scene - set by modelView()
       renderlist: null,
 
-      // {Array} the light entities that were found when processing the scene graph - set by modelView()
+      // @readonly {Array} the light entities that were found when processing the scene graph - set by modelView()
       lights: null,
       
       // {Array} list of objects containing a "trigger" function that is executed once per frame.
@@ -391,7 +391,7 @@
                if (matParent)
                {
                   // if parent matrix is provided multiply it against local matrix else use the parent matrix
-                  matLocal = matLocal ? mat4.multiply(mat4.clone(matLocal), matLocal, matParent) : matParent;
+                  matLocal = matLocal ? mat4.multiply(mat4.create(), matLocal, matParent) : matParent;
                }
                
                // hook point for onScene event handlers - custom user handlers or added by entities during
@@ -507,7 +507,7 @@
                      {
                         // TODO: have a flag on scene for "transposedNormalMatrix..." - i.e. make it optional?
                         // invert and transpose the view matrix - for correct normal scaling
-                        var matNormals = mat4.invert(mat4.clone(matLocal), matLocal);
+                        var matNormals = mat4.invert(mat4.create(), matLocal);
                         mat4.transpose(matNormals, matNormals);
                         
                         switch (obj.style.shademode)
