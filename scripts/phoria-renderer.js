@@ -33,20 +33,28 @@
             {
                // ensure we have an average z coord for the objects to test
                obj = scene.renderlist[n];
-               if (obj.style.sortmode === "sorted")
+               switch (obj.style.sortmode)
                {
-                  if (obj._coords.length === 1)
-                  {
-                     obj._averagez = obj._coords[0][2];
-                  }
-                  else
-                  {
-                     obj._averagez = Phoria.Util.averageObjectZ(obj._coords);
-                  }
-               }
-               else
-               {
-                  obj._averagez = Number.MAX_VALUE;
+                  case "sorted":
+                     // get average z coord - special case for particles with single coordinate
+                     if (obj._coords.length === 1)
+                     {
+                        obj._averagez = obj._coords[0][2];
+                     }
+                     else
+                     {
+                        obj._averagez = Phoria.Util.averageObjectZ(obj._coords);
+                     }
+                     break;
+                  case "front":
+                     // to the front - remember the Z direction is reversed
+                     obj._averagez = Number.MIN_VALUE;
+                     break;
+                  case "back":
+                  default:
+                     // to the back - remember the Z direction is reversed
+                     obj._averagez = Number.MAX_VALUE;
+                     break;
                }
             }
             scene.renderlist.sort(function sortObjectsZ(a, b) {
@@ -379,16 +387,10 @@
                   // ensure line width is set if appropriate fillmode is being used
                   if (obj.style.fillmode === "fillstroke" || obj.style.fillmode === "hiddenline") ctx.lineWidth = 1.0;
                   
-                  // viewer position is used by polygon backface culling
-                  var position = vec3.fromValues(
-                     scene.camera.position.x,
-                     scene.camera.position.y,
-                     scene.camera.position.z);
-                  
                   // render the pre-sorted polygons
                   for (var i=0; i<obj.polygons.length; i++)
                   {
-                     this.renderPolygon(ctx, obj, scene, obj.polygons[i], position);
+                     this.renderPolygon(ctx, obj, scene, obj.polygons[i]);
                   }
                   break;
                }
@@ -470,7 +472,7 @@
                // optional rendering callback functions
                if (obj.onRenderHandlers !== null)
                {
-                  for (var h in obj.onRenderHandlers)
+                  for (var h=0; h<obj.onRenderHandlers.length; h++)
                   {
                      obj.onRenderHandlers[h].call(obj, ctx, coord[0], coord[1], w);
                   }
@@ -530,7 +532,7 @@
          }
       },
       
-      renderPolygon: function renderPolygon(ctx, obj, scene, poly, position)
+      renderPolygon: function renderPolygon(ctx, obj, scene, poly)
       {
          var coords = obj._coords,
              clip = obj._clip,
@@ -546,8 +548,12 @@
          }
          if (clippoly) return;
          
-         // hidden surface removal - viewer vector to surface normal
-         if (!obj.style.doublesided && vec3.dot(position, poly._worldnormal) < obj.style.hiddenangle) return;
+         // hidden surface removal - use area sign in screen space calculation rather than normal to camera
+         // as normal dot test will only work for orthogonal projection not perspective projection
+         if (!obj.style.doublesided && 
+             ((coords[vertices[0]][0]*coords[vertices[1]][1] - coords[vertices[1]][0]*coords[vertices[0]][1]) +
+              (coords[vertices[1]][0]*coords[vertices[2]][1] - coords[vertices[2]][0]*coords[vertices[1]][1]) +
+              (coords[vertices[2]][0]*coords[vertices[0]][1] - coords[vertices[0]][0]*coords[vertices[2]][1]) < 0)) return;
          
          // generate fill style based on lighting mode
          switch (obj.style.shademode)
@@ -819,17 +825,11 @@
             {
                case "solid":
                {
-                  // viewer position is used by polygon backface culling
-                  var position = vec3.fromValues(
-                     scene.camera.position.x,
-                     scene.camera.position.y,
-                     scene.camera.position.z);
-                  
                   // render the pre-sorted polygons
                   var rendercount = 0;
                   for (var i=0; i<obj.polygons.length; i++)
                   {
-                     if (this.renderPolygon(null, obj, obj.polygons[i], position, scene)) rendercount++;
+                     if (this.renderPolygon(null, obj, scene, obj.polygons[i])) rendercount++;
                   }
                   //if (Date.now() % 25 === 0) console.log(rendercount);
                   break;
@@ -857,7 +857,7 @@
          }
       },
       
-      renderPolygon: function renderPolygon(ctx, obj, poly, position, scene)
+      renderPolygon: function renderPolygon(ctx, obj, scene, poly)
       {
          var coords = obj._coords,
              clip = obj._clip,
@@ -872,8 +872,11 @@
          }
          if (clippoly) return false;
          
-         // hidden surface removal - viewer vector to surface normal
-         if (!obj.style.doublesided && vec3.dot(position, poly._worldnormal) < obj.style.hiddenangle) return false;
+         // hidden surface removal
+         if (!obj.style.doublesided && 
+             ((coords[vertices[0]][0]*coords[vertices[1]][1] - coords[vertices[1]][0]*coords[vertices[0]][1]) +
+              (coords[vertices[1]][0]*coords[vertices[2]][1] - coords[vertices[2]][0]*coords[vertices[1]][1]) +
+              (coords[vertices[2]][0]*coords[vertices[0]][1] - coords[vertices[0]][0]*coords[vertices[2]][1]) < 0)) return;
          
          // generate fill style based on lighting mode
          var rgb;

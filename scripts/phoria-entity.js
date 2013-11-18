@@ -26,7 +26,8 @@
     *    id: string,
     *    matrix: mat4,
     *    children: [...],
-    *    onScene: function() {...}
+    *    onScene: function() {...},
+    *    disabled: boolean
     * }
     */
    Phoria.BaseEntity.create = function(desc, e)
@@ -37,6 +38,7 @@
       if (desc.matrix) e.matrix = desc.matrix;
       if (desc.children) e.children = desc.children;
       if (desc.onScene) e.onScene(desc.onScene);
+      if (desc.disabled !== undefined) e.disabled = desc.disabled;
       
       return e;
    };
@@ -52,6 +54,9 @@
       
       // {mat4} matrix to be applied to the entity during scene processing
       matrix: null,
+
+      // {boolean} set to true to disable processing of the Entity and all child entities during the modelView pipeline
+      disabled: false,
       
       onSceneHandlers: null,
       
@@ -189,7 +194,6 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
          fillmode: "inflate",
          linewidth: 1.0,
          linescale: 0.0,
-         hiddenangle: -Phoria.PIO2,
          doublesided: false
       };
       
@@ -204,7 +208,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     *    children: [...],              // child list of entities - they inherit the parent transformation matrix
     *    onScene: function() {...},    // onScene event handler function(s)
     *    
-    *    points: [{x:0,y:0},...],
+    *    points: [{x:0,y:0,z:0},...],
     *    edges: [{a:0,b:1},...],
     *    polygons: [{vertices:[7,8,10,9]},{vertices:[0,1,2],texture:0,uvs:[0,0,0.5,0.5,0.5,0]},...],
     *    style: {
@@ -217,7 +221,6 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     *       fillmode: "inflate",       // one of "fill", "filltwice", "inflate", "fillstroke", "hiddenline"
     *       linewidth: 1.0,            // wireframe line thickness
     *       linescale: 0.0,            // depth based scaling factor for wireframes - can be zero for no scaling
-    *       hiddenangle: 0.0,          // hidden surface test angle - generally between -PI and 0 - depends on perspective fov
     *       doublesided: false,        // true to always render polygons - i.e. do not perform hidden surface test
     *       texture: undefined         // default texture index to use for polygons if not specified - e.g. when UVs are used
     *    }
@@ -349,6 +352,92 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
          return array;
       }
    });
+
+   /**
+    * Add debug information to an entity.
+    * Debug config options:
+    * {
+    *    showId: boolean
+    *    showAxis: boolean
+    *    showPosition: boolean
+    * }
+    */
+   Phoria.Entity.debug = function(entity, config)
+   {
+      // search child list for debug entity
+      var id = "Phoria.Debug" + (entity.id ? (" "+entity.id) : "");
+      var debugEntity = null;
+      for (var i=0; i<entity.children.length; i++)
+      {
+         if (entity.children[i].id === id)
+         {
+            debugEntity = entity.children[i];
+            break;
+         }
+      }
+      
+      // create debug entity if it does not exist
+      if (debugEntity === null)
+      {
+         // add a child entity with a custom renderer - that renders text of the parent id at position
+         debugEntity = new Phoria.Entity();
+         debugEntity.id = id;
+         debugEntity.points = [ {x:0,y:0,z:0} ];
+         debugEntity.style = {
+            drawmode: "point",
+            shademode: "callback",
+            sortmode: "front"    // force render on-top of everything else
+         };
+
+         // config object - will be combined with input later
+         debugEntity.config = {};
+
+         debugEntity.onRender(function(ctx, x, y) {
+            // render debug text
+            ctx.fillStyle = "#000";
+            ctx.font = "14pt Helvetica";
+            var textPos = y;
+            if (this.config.showId)
+            {
+               ctx.fillText(entity.id ? entity.id : "unknown - set Entity 'id' property", x, textPos);
+               textPos += 16;
+            }
+            if (this.config.showPosition)
+            {
+               var p = debugEntity._worldcoords[0];
+               ctx.fillText("{x:" + p[0].toFixed(2) + ", y:" + p[1].toFixed(2) + ", z:" + p[2].toFixed(2) + "}", x, textPos);
+            }
+         });
+         entity.children.push(debugEntity);
+
+         // add visible axis geometry (lines) as children of entity for showAxis
+         var fnCreateAxis = function(letter, vector, color) {
+            var axisEntity = new Phoria.Entity();
+            axisEntity.points = [ {x:0,y:0,z:0}, {x:2*vector[0],y:2*vector[1],z:2*vector[2]} ];
+            axisEntity.edges = [ {a:0,b:1} ];
+            axisEntity.style = {
+               drawmode: "wireframe",
+               shademode: "plain",
+               sortmode: "front",
+               linewidth: 2.0,
+               color: color
+            };
+            axisEntity.disabled = true;
+            return axisEntity;
+         };
+         debugEntity.children.push(fnCreateAxis("X", vec3.fromValues(1,0,0), [255,0,0]));
+         debugEntity.children.push(fnCreateAxis("Y", vec3.fromValues(0,1,0), [0,255,0]));
+         debugEntity.children.push(fnCreateAxis("Z", vec3.fromValues(0,0,1), [0,0,255]));
+      }
+
+      // set the config
+      Phoria.Util.combine(debugEntity.config, config);
+      for (var i=0; i<debugEntity.children.length; i++)
+      {
+         debugEntity.children[i].disabled = !debugEntity.config.showAxis;
+      }
+   }
+
 })();
 
 
@@ -360,7 +449,8 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
    /**
     * The PositionalAspect has defines a prototype for objects that may not be rendered directly (i.e. do not need
     * to have a visible entity) but do represent a position in the scene.
-    * Augment an object with this aspect to provide an easy way to keep track of a it's position in the scene after
+    * 
+    * Augment a prototype with this aspect to provide an easy way to keep track of a it's position in the scene after
     * matrix transformations have occured.
     */
    Phoria.PositionalAspect.prototype =
