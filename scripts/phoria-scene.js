@@ -66,7 +66,7 @@
     *       fov: 35.0,
     *       aspect: 1.0,
     *       near: 1.0,
-    *       far: 1000.0
+    *       far: 10000.0
     *    },
     *    viewport: {
     *       x: 0,
@@ -382,6 +382,9 @@
             {
                obj = entities[n];
 
+               // check disabled flag for this entity
+               if (obj.disabled) continue;
+
                // construct entity lookup list by optional ID
                // used to quickly lookup entities in event handlers without walking child lists etc.
                if (obj.id) entityById[obj.id] = obj;
@@ -507,12 +510,11 @@
                      {
                         // TODO: have a flag on scene for "transposedNormalMatrix..." - i.e. make it optional?
                         // invert and transpose the view matrix - for correct normal scaling
-                        var matNormals = mat4.invert(mat4.create(), matLocal);
+                        var matNormals = mat4.invert(mat4.create(), matLocal ? matLocal : mat4.create());
                         mat4.transpose(matNormals, matNormals);
                         
                         switch (obj.style.shademode)
                         {
-                           case "plain":
                            case "lightsource":
                            {
                               // transform each polygon normal
@@ -569,13 +571,14 @@
          // Process the scene trigger functions - this allows for real-time modification of the scene
          // based on a supplied handler function - a sequence of these triggers can nest and add new
          // triggers causing a sequence of events to perform chained actions to the scene as it executes.
-         // Uses a standard for loop to allow for modifications to the list during event processing.
-         for (var t=0; t<this.triggerHandlers.length; t++)
+         // Uses a for(...) loop to allow add/remove mods to the list during event processing.
+         for (var t=0, len = this.triggerHandlers.length; t<len; t++)
          {
             // trigger handlers return true if they are finished i.e. no longer needed in the scene
             if (this.triggerHandlers[t].trigger.call(this, this._cameraPosition, cameraLookat, cameraUp))
             {
                this.triggerHandlers.splice(t, 1);
+               len--;
             }
          }
       }
