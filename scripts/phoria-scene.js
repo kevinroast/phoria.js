@@ -418,52 +418,7 @@
                   // pre-create or reuse coordinate buffers for world, screen, normal and clip coordinates
                   obj.initCoordinateBuffers();
                   
-                  for (var v=0, verts, vec; v<len; v++)
-                  {
-                     // construct homogeneous coordinate for the vertex as a vec4
-                     verts = obj.points[v];
-                     vec = vec4.set(obj._worldcoords[v], verts.x, verts.y, verts.z, 1.0);
-                     
-                     // local object transformation -> world space
-                     // skip local transform if matrix not present
-                     // else store locally transformed vec4 world points
-                     if (matLocal) vec4.transformMat4(vec, vec, matLocal);
-                  }
-                  
-                  // multiply by camera matrix to generate camera space coords
-                  for (var v=0; v<len; v++)
-                  {
-                     vec4.transformMat4(obj._coords[v], obj._worldcoords[v], camera);
-                  }
-                  
-                  // sort the object before any further transformations
-                  // solid objects always need sorting as each poly can be a different shade/texture
-                  // wireframe and points objects will not be sorted if the "plain" shademode is used
-                  if (obj.style.drawmode === "solid" || obj.style.shademode === "lightsource")
-                  {
-                     switch (obj.style.drawmode)
-                     {
-                        case "solid":
-                           Phoria.Util.sortPolygons(obj.polygons, obj._coords);
-                           break;
-                        case "wireframe":
-                           Phoria.Util.sortEdges(obj.edges, obj._coords);
-                           break;
-                        case "point":
-                           Phoria.Util.sortPoints(obj._coords, obj._worldcoords);
-                           break;
-                     }
-                  }
-                  
-                  // multiply by perspective matrix to generate clip coordinates
-                  for (var v=0; v<len; v++)
-                  {
-                     // store perspective transformed vec4
-                     vec4.transformMat4(obj._coords[v], obj._coords[v], perspective);
-                  }
-                  
-                  // perspective division to create vec2 NDC then finally transform to viewport
-                  // clip calculation occurs before the viewport transform
+                  // set-up some values used during clipping calculations
                   var objClip = 0,
                       clipOffset = 0;
                   if (obj.style.drawmode === "point")
@@ -479,8 +434,27 @@
                         clipOffset = (obj.style.linewidth * obj.style.linescale) / this._perspectiveScale * 0.5;
                      }
                   }
-                  for (var v=0, vec, w; v<len; v++)
+
+                  // main vertex processing loop
+                  for (var v=0, verts, vec, w; v<len; v++)
                   {
+                     // construct homogeneous coordinate for the vertex as a vec4
+                     verts = obj.points[v];
+                     vec = vec4.set(obj._worldcoords[v], verts.x, verts.y, verts.z, 1.0);
+                     
+                     // local object transformation -> world space
+                     // skip local transform if matrix not present
+                     // else store locally transformed vec4 world points
+                     if (matLocal) vec4.transformMat4(vec, vec, matLocal);
+
+                     // multiply by camera matrix to generate camera space coords
+                     vec4.transformMat4(obj._cameracoords[v], obj._worldcoords[v], camera);
+
+                     // multiply by perspective matrix to generate perspective and clip coordinates
+                     vec4.transformMat4(obj._coords[v], obj._cameracoords[v], perspective);
+                  
+                     // perspective division to create vec2 NDC then finally transform to viewport
+                     // clip calculation occurs before the viewport transform
                      vec = obj._coords[v];
                      w = vec[3];
                      
@@ -505,11 +479,30 @@
                   // if entire object is clipped, do not bother with final steps or adding to render list
                   if (objClip !== len)
                   {
+                     // sort the object before any further transformations
+                     // solid objects always need sorting as each poly can be a different shade/texture
+                     // wireframe and points objects will not be sorted if the "plain" shademode is used
+                     if (obj.style.drawmode === "solid" || obj.style.shademode === "lightsource")
+                     {
+                        switch (obj.style.drawmode)
+                        {
+                           case "solid":
+                              Phoria.Util.sortPolygons(obj.polygons, obj._cameracoords);
+                              break;
+                           case "wireframe":
+                              Phoria.Util.sortEdges(obj.edges, obj._cameracoords);
+                              break;
+                           case "point":
+                              Phoria.Util.sortPoints(obj._coords, obj._worldcoords);
+                              break;
+                        }
+                     }
+
                      // normal lighting transformation
                      if (obj.style.drawmode === "solid" && obj.polygons.length !== 0)
                      {
                         // TODO: have a flag on scene for "transposedNormalMatrix..." - i.e. make it optional?
-                        // invert and transpose the view matrix - for correct normal scaling
+                        // invert and transpose the local model matrix - for correct normal scaling
                         var matNormals = mat4.invert(mat4.create(), matLocal ? matLocal : mat4.create());
                         mat4.transpose(matNormals, matNormals);
                         

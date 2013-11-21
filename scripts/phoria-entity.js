@@ -266,9 +266,8 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
       onRenderHandlers: null,
       
       _worldcoords: null,
+      _cameracoords: null,
       _coords: null,
-      _vertexNormals: null,
-      _worldVertexNormals: null,
       _clip: null,
       _averagez: 0,
       _sorted: true,
@@ -326,30 +325,20 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
             this._worldcoords = new Array(len);
             for (var i=0; i<len; i++) this._worldcoords[i] = vec4.create();
          }
+         if (this._cameracoords === null || this._cameracoords.length < len)
+         {
+            this._cameracoords = new Array(len);
+            for (var i=0; i<len; i++) this._cameracoords[i] = vec4.create();
+         }
          if (this._coords === null || this._coords.length < len)
          {
             this._coords = new Array(len);
             for (var i=0; i<len; i++) this._coords[i] = vec4.create();
          }
-         if (this._worldVertexNormals === null || this._worldVertexNormals.length < len)
-         {
-            this._worldVertexNormals = new Array(len);
-            for (var i=0; i<len; i++) this._worldVertexNormals[i] = vec4.create();
-         }
          if (this._clip === null || this._clip.length < len)
          {
             this._clip = new Phoria.CLIP_ARRAY_TYPE(len);
          }
-      },
-      
-      populateBuffer: function populateBuffer(len, fnFactory)
-      {
-         var array = new Array(len);
-         for (var i=0; i<len; i++)
-         {
-            array[i] = fnFactory();
-         }
-         return array;
       }
    });
 

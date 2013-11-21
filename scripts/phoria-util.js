@@ -325,6 +325,19 @@ Phoria.EPSILON = 0.000001;
    }
 
    /**
+    * Return an Array of a given length using the given factory function to populate each item
+    */
+   Phoria.Util.populateBuffer = function populateBuffer(len, fnFactory)
+   {
+      var array = new Array(len);
+      for (var i=0; i<len; i++)
+      {
+         array[i] = fnFactory(i);
+      }
+      return array;
+   }
+
+   /**
     * Sort a list of polygons by the Z coordinates in the supplied coordinate list
     */
    Phoria.Util.sortPolygons = function sortPolygons(polygons, worldcoords)
@@ -374,12 +387,12 @@ Phoria.EPSILON = 0.000001;
             {
                // find the first element that is < the partionElement starting
                // from the leftIndex (Z coord of point)
-               while (leftIndex < right && a[leftIndex][2] < partionElement)
+               while (leftIndex < right && a[leftIndex][2] > partionElement)
                   leftIndex++;
                
                // find an element that is greater than the
                // partionElement starting from the rightIndex
-               while (rightIndex > left && a[rightIndex][2] > partionElement)
+               while (rightIndex > left && a[rightIndex][2] < partionElement)
                   rightIndex--;
                
                // if the indexes have not crossed, swap
@@ -553,7 +566,7 @@ Phoria.EPSILON = 0.000001;
             var z = sinPhi * sinTheta;
             if (generateUVs)
             {
-               var u = 1-(longNumber/longs);
+               var u = longNumber/longs;
                var v = latNumber/lats;
                uvs.push({u: u, v: v});
             }
