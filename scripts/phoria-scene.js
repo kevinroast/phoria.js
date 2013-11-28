@@ -434,7 +434,7 @@
                         clipOffset = (obj.style.linewidth * obj.style.linescale) / this._perspectiveScale * 0.5;
                      }
                   }
-
+                  
                   // main vertex processing loop
                   for (var v=0, verts, vec, w; v<len; v++)
                   {
@@ -445,14 +445,14 @@
                      // local object transformation -> world space
                      // skip local transform if matrix not present
                      // else store locally transformed vec4 world points
-                     if (matLocal) vec4.transformMat4(vec, vec, matLocal);
-
+                     if (matLocal) vec4.transformMat4(obj._worldcoords[v], vec, matLocal);
+                     
                      // multiply by camera matrix to generate camera space coords
                      vec4.transformMat4(obj._cameracoords[v], obj._worldcoords[v], camera);
-
+                     
                      // multiply by perspective matrix to generate perspective and clip coordinates
                      vec4.transformMat4(obj._coords[v], obj._cameracoords[v], perspective);
-                  
+                     
                      // perspective division to create vec2 NDC then finally transform to viewport
                      // clip calculation occurs before the viewport transform
                      vec = obj._coords[v];
@@ -469,7 +469,7 @@
                      // perspective division
                      vec[0] /= w;
                      vec[1] /= w;
-                     vec[2] /= w;   // Z is used by coarse object depth sort
+                     // Z is used by coarse object depth sort
                      
                      // linear transform to viewport - could combine with division above - but for clarity it is not
                      vec[0] = vpw * vec[0] + vpx + vpw;
@@ -479,7 +479,7 @@
                   // if entire object is clipped, do not bother with final steps or adding to render list
                   if (objClip !== len)
                   {
-                     // sort the object before any further transformations
+                     // sort the geometry before any further transformations
                      // solid objects always need sorting as each poly can be a different shade/texture
                      // wireframe and points objects will not be sorted if the "plain" shademode is used
                      if (obj.style.drawmode === "solid" || obj.style.shademode === "lightsource")

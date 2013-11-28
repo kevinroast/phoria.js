@@ -61,7 +61,7 @@ function onloadHandler()
          drawmode: "wireframe",
          shademode: "plain",
          linewidth: 0.5,
-         sortmode: "unsorted"
+         objectsortmode: "back"
       }
    }));
 
@@ -81,7 +81,7 @@ function onloadHandler()
             drawmode: "point",
             shademode: "plain",
             linewidth: 0.75,
-            sortmode: "unsorted"
+            objectsortmode: "back"
          }
       });
    };
@@ -160,22 +160,21 @@ function onloadHandler()
                }
             });
             var emitterHandle = new Phoria.PhysicsEntity();
-            emitterHandle.createdon = Date.now();
-            emitterHandle.explode = Rnd(300) + 300;
+            emitterHandle.explodeY = 5 + Rnd(5);
             emitterHandle.onScene(function() {
-               if (!this.exploded && Date.now() - this.createdon > this.explode)
+               if (!this.exploded && this.explodeY < this.worldposition[1])
                {
-                  this.exploded = true;
-                  emitter.velocity = {x:0, y:-0.1, z:0};
-                  emitter.velocityRnd = {x:0.2+Rnd(0.1), y:0.2+Rnd(0.1), z:0.2+Rnd(0.1)};
+                  this.exploded = Date.now();
+                  emitter.velocity = {x:0, y:-0.2, z:0};
+                  emitter.velocityRnd = {x:0.4+Rnd(0.2), y:0.4+Rnd(0.2), z:0.4+Rnd(0.2)};
                   emitter.gravity = false;
-                  emitter.rate = 400 + ~~Rnd(200);
-
+                  emitter.rate = 300 + ~~Rnd(200);
+                  
                   // change sprite style to star sparkle effect
                   emitter.style.shademode = "callback";
                   emitter.style.sprite = bitmaps[~~Rnd(bitmaps.length - 1) + 1];
                }
-               if (Date.now() - this.createdon > this.explode+200)
+               if (Date.now() - this.exploded > 200)
                {
                   emitter.rate = 0;
                   if (emitter.children.length === 0)

@@ -190,8 +190,9 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
          specular: 0,
          drawmode: "solid",
          shademode: "lightsource",
-         sortmode: "sorted",
          fillmode: "inflate",
+         objectsortmode: "sorted",
+         geometrysortmode: "automatic",
          linewidth: 1.0,
          linescale: 0.0,
          doublesided: false
@@ -203,11 +204,6 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
    /**
     * Factory create method - object literal Entity descripton:
     * {
-    *    id: string                    // unique ID for easy lookup of entity later in event handlers etc.
-    *    matrix: mat4,                 // initial transformation matrix to use
-    *    children: [...],              // child list of entities - they inherit the parent transformation matrix
-    *    onScene: function() {...},    // onScene event handler function(s)
-    *    
     *    points: [{x:0,y:0,z:0},...],
     *    edges: [{a:0,b:1},...],
     *    polygons: [{vertices:[7,8,10,9]},{vertices:[0,1,2],texture:0,uvs:[0,0,0.5,0.5,0.5,0]},...],
@@ -216,14 +212,15 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     *       specular: 0,               // if not zero, specifies specular shinyness power - e.g. values like 16 or 64
     *       diffuse: 1.0,              // material diffusion generally ranges from 0-1
     *       drawmode: "solid",         // one of "point", "wireframe", "solid"
-    *       shademode: "lightsource",  // one of "plain", "lightsource", "sprite" (only for point rendering)
-    *       sortmode: "sorted",        // one of "sorted", "unsorted"
+    *       shademode: "lightsource",  // one of "plain", "lightsource", "sprite", "callback" (only for point rendering)
     *       fillmode: "inflate",       // one of "fill", "filltwice", "inflate", "fillstroke", "hiddenline"
+    *       objectsortmode: "sorted",  // coarse object sort - one of "sorted", "front", "back"
+    *       geometrysortmode: "automatic",   // point, edge or polygon sorting mode - one of "sorted", "automatic", "none"
     *       linewidth: 1.0,            // wireframe line thickness
     *       linescale: 0.0,            // depth based scaling factor for wireframes - can be zero for no scaling
     *       doublesided: false,        // true to always render polygons - i.e. do not perform hidden surface test
     *       texture: undefined         // default texture index to use for polygons if not specified - e.g. when UVs are used
-    *    }
+    *    },
     *    onRender: function() {...}
     * }
     */
@@ -375,7 +372,8 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
          debugEntity.style = {
             drawmode: "point",
             shademode: "callback",
-            sortmode: "front"    // force render on-top of everything else
+            geometrysortmode: "none",
+            objectsortmode: "front"    // force render on-top of everything else
          };
 
          // config object - will be combined with input later
@@ -407,7 +405,8 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
             axisEntity.style = {
                drawmode: "wireframe",
                shademode: "plain",
-               sortmode: "front",
+               geometrysortmode: "none",
+               objectsortmode: "front",
                linewidth: 2.0,
                color: color
             };
@@ -606,7 +605,8 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
          color: [128,128,128],
          drawmode: "point",
          shademode: "plain",
-         sortmode: "unsorted",
+         geometrysortmode: "none",
+         objectsortmode: "sorted",
          linewidth: 5,
          linescale: 2
       };

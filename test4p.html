@@ -54,7 +54,7 @@ function onloadHandler()
          drawmode: "solid",
          shademode: "lightsource",
          linewidth: 0.5,
-         sortmode: "unsorted"
+         objectsortmode: "back"
       }
    }));
    scene.graph.push(new Phoria.DistantLight());
@@ -75,7 +75,7 @@ function onloadHandler()
          p.style = Phoria.Util.clone(p.style);
          p.style.color = [~~((Math.sin(t))*128)+128,~~((Math.sin(t/2))*128)+128,~~((Math.cos(t))*128)+128];
          
-         // add light to the particle as a child object , yep I know, mental.
+         // add light to the particle as a child object, yep I know, mental.
          var light = Phoria.PointLight.create({
             intensity: 0.75,
             attenuation: 0.2,                                 

@@ -47,7 +47,7 @@ function onloadHandler()
          drawmode: "wireframe",
          shademode: "plain",
          linewidth: 0.5,
-         sortmode: "unsorted"
+         objectsortmode: "back"
       }
    }));
    scene.graph.push(new Phoria.DistantLight());
@@ -66,7 +66,6 @@ function onloadHandler()
          // sine/cosine a colour cycle for the particles
          var t = Date.now()/1000;
          p.style = Phoria.Util.clone(p.style);
-         p.style.sortmode = "sorted";
          p.style.color = [~~((Math.sin(t))*128)+128,~~((Math.sin(t/2))*128)+128,~~((Math.cos(t))*128)+128];
       }
    });

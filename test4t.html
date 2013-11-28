@@ -50,7 +50,7 @@ function onloadHandler()
          drawmode: "wireframe",
          shademode: "plain",
          linewidth: 0.5,
-         sortmode: "unsorted"
+         objectsortmode: "back"
       }
    }));
    scene.graph.push(new Phoria.DistantLight());
@@ -68,6 +68,7 @@ function onloadHandler()
          compositeOperation: "lighter",
          shademode: "sprite",
          linewidth: 32,
+         objectsortmode: "front",
          sprite: bitmaps[0]
       }
    });

@@ -47,7 +47,7 @@ function onloadHandler()
       style: {
          drawmode: "wireframe",
          linewidth: 0.5,
-         sortmode: "unsorted"
+         objectsortmode: "back"
       }
    }));
    var s = Phoria.Util.generateSphere(1, 12, 24);
@@ -56,10 +56,8 @@ function onloadHandler()
       edges: s.edges,
       polygons: s.polygons,
       style: {
-         specular: 0,
          linescale: 10,
-         drawmode: "point",
-         fillmode: "inflate"
+         drawmode: "point"
       }
    });
    sphere.scaleN(3);

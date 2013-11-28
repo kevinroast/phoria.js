@@ -33,7 +33,7 @@
             {
                // ensure we have an average z coord for the objects to test
                obj = scene.renderlist[n];
-               switch (obj.style.sortmode)
+               switch (obj.style.objectsortmode)
                {
                   case "sorted":
                      // get average z coord - special case for particles with single coordinate

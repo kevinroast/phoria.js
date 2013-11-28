@@ -359,6 +359,9 @@ Phoria.EPSILON = 0.000001;
       });
    }
 
+   /**
+    * Sort a list of edges by the average Z coordinate of the two vertices that represent it each edge.
+    */
    Phoria.Util.sortEdges = function sortEdges(edges, coords)
    {
       for (var i=0; i<edges.length; i++)
@@ -370,61 +373,54 @@ Phoria.EPSILON = 0.000001;
       });
    }
 
+   /**
+    * Sort a list of points by the Z coordinate. A second list is supplied that will be sorted in
+    * lock-step with the first list (to maintain screen and worldcoordinate list)
+    */
    Phoria.Util.sortPoints = function sortPoints(coords, worldcoords)
    {
-      // we need our own sort as we need to swap items in two lists during the sorting process
-      var quickSort = function quickSort(c, a, left, right)
-      {
-         var leftIndex = left, rightIndex = right, partionElement, tempP;
-         
-         if (right > left)
-         {
-            // get midpoint of the array
-            partionElement = a[(left + right) >> 1][2];
+      // We need our own sort routine as we need to swap items within two lists during the sorting, as
+      // they must be maintained in lock-step or the lighting processing (using matching worldcoord indexes)
+      // will produce incorrect results
+      var quickSort = function qSort(c, a, start, end) {
+         if (start < end) {
+            var pivotIndex = (start + end) >> 1,
+                pivotValue = a[pivotIndex][2],
+                pivotIndexNew = start;
             
-            // loop through the array until indices cross
-            while (leftIndex <= rightIndex)
+            var tmp = a[pivotIndex];
+            a[pivotIndex] = a[end];
+            a[end] = tmp;
+            tmp = c[pivotIndex];
+            c[pivotIndex] = c[end];
+            c[end] = tmp;
+            
+            for (var i = start; i < end; i++)
             {
-               // find the first element that is < the partionElement starting
-               // from the leftIndex (Z coord of point)
-               while (leftIndex < right && a[leftIndex][2] > partionElement)
-                  leftIndex++;
-               
-               // find an element that is greater than the
-               // partionElement starting from the rightIndex
-               while (rightIndex > left && a[rightIndex][2] < partionElement)
-                  rightIndex--;
-               
-               // if the indexes have not crossed, swap
-               if (leftIndex <= rightIndex)
+               if (a[i][2] > pivotValue)
                {
-                  // swap world and screen objects
-                  tempP = c[leftIndex];
-                  c[leftIndex] = c[rightIndex];
-                  c[rightIndex] = tempP;
-                  tempP = a[leftIndex];
-                  a[leftIndex] = a[rightIndex];
-                  a[rightIndex] = tempP;
-                  leftIndex++;
-                  rightIndex--;
+                  tmp = c[i];
+                  c[i] = c[pivotIndexNew];
+                  c[pivotIndexNew] = tmp;
+                  tmp = a[i];
+                  a[i] = a[pivotIndexNew];
+                  a[pivotIndexNew] = tmp;
+                  
+                  pivotIndexNew++;
                }
             }
             
-            // if the right index has not reached the left side of the array then
-            // must sort the left partition.
-            if (left < rightIndex)
-            {
-               quickSort(c, a, left, rightIndex);
-            }
+            tmp = c[pivotIndexNew];
+            c[pivotIndexNew] = c[end];
+            c[end] = tmp;
+            tmp = a[pivotIndexNew];
+            a[pivotIndexNew] = a[end];
+            a[end] = tmp;
             
-            // if the left index has not reached the left side of the array then 
-            // must sort the left partition. 
-            if (leftIndex < right)
-            {
-               quickSort(c, a, leftIndex, right);
-            }
+            qSort(c, a, start, pivotIndexNew-1);
+            qSort(c, a, pivotIndexNew+1, end);
          }
-      }
+      };
       quickSort(worldcoords, coords, 0, coords.length - 1);
    }
    
