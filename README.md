@@ -21,6 +21,8 @@ http://www.kevs3d.co.uk/dev/phoria/test0k.html - test 0k - WASD and arrow keys m
 
 http://www.kevs3d.co.uk/dev/phoria/test1.html - test 1 - animated point lights around a cube
 
+http://www.kevs3d.co.uk/dev/phoria/test1d.html - test 1d - live debug information in a scene
+
 http://www.kevs3d.co.uk/dev/phoria/test2i.html - test 2 - example WaveFront .obj file importer
 
 http://www.kevs3d.co.uk/dev/phoria/test3.html - test 3 - sphere with point lighting

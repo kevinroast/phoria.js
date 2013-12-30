@@ -480,21 +480,30 @@
                   if (objClip !== len)
                   {
                      // sort the geometry before any further transformations
-                     // solid objects always need sorting as each poly can be a different shade/texture
-                     // wireframe and points objects will not be sorted if the "plain" shademode is used
-                     if (obj.style.drawmode === "solid" || obj.style.shademode === "lightsource")
+                     switch (obj.style.geometrysortmode)
                      {
-                        switch (obj.style.drawmode)
+                        default:
+                        case "automatic":
+                        case "sorted":
                         {
-                           case "solid":
-                              Phoria.Util.sortPolygons(obj.polygons, obj._cameracoords);
-                              break;
-                           case "wireframe":
-                              Phoria.Util.sortEdges(obj.edges, obj._cameracoords);
-                              break;
-                           case "point":
-                              Phoria.Util.sortPoints(obj._coords, obj._worldcoords);
-                              break;
+                           // solid objects always need sorting as each poly can be a different shade/texture
+                           // wireframe and points objects will not be sorted if the "plain" shademode is used
+                           if (obj.style.geometrysortmode === "sorted" ||
+                               obj.style.drawmode === "solid" || obj.style.shademode === "lightsource")
+                           {
+                              switch (obj.style.drawmode)
+                              {
+                                 case "solid":
+                                    Phoria.Util.sortPolygons(obj.polygons, obj._cameracoords);
+                                    break;
+                                 case "wireframe":
+                                    Phoria.Util.sortEdges(obj.edges, obj._cameracoords);
+                                    break;
+                                 case "point":
+                                    Phoria.Util.sortPoints(obj._coords, obj._worldcoords);
+                                    break;
+                              }
+                           }
                         }
                      }
 

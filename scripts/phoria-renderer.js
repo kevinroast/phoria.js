@@ -421,6 +421,18 @@
                
                case "point":
                {
+                  // assert to ensure that the texture image referenced by the 'sprite' inde exists
+                  if (obj.style.shademode === "sprite" && obj.style.sprite !== undefined)
+                  {
+                     if (!obj.textures)
+                     {
+                        throw new Error("Entity has shademode 'sprite' but no textures defined on parent emitter.");
+                     }
+                     if (obj.style.sprite > obj.textures.length - 1)
+                     {
+                        throw new Error("Entity has shademode 'sprite' index but references missing texture on parent emitter.")
+                     }
+                  }
                   var coords = obj._coords;
                   if (obj.style.shademode === "plain")
                   {
@@ -461,9 +473,9 @@
             }
             case "sprite":
             {
-               if (obj.style.sprite)
+               if (obj.style.sprite !== undefined)
                {
-                  ctx.drawImage(obj.style.sprite, coord[0]-w, coord[1]-w, w+w, w+w);
+                  ctx.drawImage(obj.textures[obj.style.sprite], coord[0]-w, coord[1]-w, w+w, w+w);
                }
                break;
             }
@@ -538,7 +550,7 @@
              clip = obj._clip,
              vertices = poly.vertices,
              color = poly.color ? poly.color : obj.style.color,
-             fillStyle = null, rgb;
+             fillStyle = null, rgb, emit = 0;
          
          // clip of poly if all vertices have been marked for clipping
          var clippoly = 1;
@@ -571,12 +583,17 @@
             case "lightsource":
             {
                // this performs a pass for each light - a simple linear-additive lighting model
-               var rgb = this.calcNormalBrightness(Phoria.Util.averagePolyVertex(vertices, obj._worldcoords), poly._worldnormal, scene, obj);
+               rgb = this.calcNormalBrightness(Phoria.Util.averagePolyVertex(vertices, obj._worldcoords), poly._worldnormal, scene, obj);
                
+               if (poly.emit || obj.style.emit)
+               {
+                  emit = poly.emit ? poly.emit : obj.style.emit;
+               }
+
                // generate style string for canvas fill (integers in 0-255 range)
-               fillStyle = Math.min(Math.ceil(rgb[0]*color[0]),255) + "," +
-                           Math.min(Math.ceil(rgb[1]*color[1]),255) + "," +
-                           Math.min(Math.ceil(rgb[2]*color[2]),255);
+               fillStyle = Math.min(Math.ceil(rgb[0]*color[0] + color[0]*emit),255) + "," +
+                           Math.min(Math.ceil(rgb[1]*color[1] + color[1]*emit),255) + "," +
+                           Math.min(Math.ceil(rgb[2]*color[2] + color[1]*emit),255);
                
                break;
             }

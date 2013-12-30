@@ -167,9 +167,10 @@ function onloadHandler()
          compositeOperation: "lighter",
          shademode: "sprite",
          linewidth: 32,
-         sprite: bitmaps[0]
+         sprite: 0
       }
    });
+   emitter.textures.push(bitmaps[0]);
    // start over to the left, and move along the X axis
    emitter.translateX(-200);
    var emitterVel = [0.5,0,0];

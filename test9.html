@@ -147,7 +147,7 @@ function onloadHandler()
                   linewidth: 12 + ~~Rnd(4),
                   // start with the sprite for a rocket engine effect
                   shademode: "sprite",
-                  sprite: bitmaps[0]
+                  sprite: 0
                },
                onParticle: function(particle) {
                   // add custom render method to particle - randomly rotating sprite effect
@@ -155,10 +155,11 @@ function onloadHandler()
                   particle.onRender(function(ctx, x, y, w) {
                      ctx.translate(x, y);
                      ctx.rotate(Math.random(Phoria.TWOPI));
-                     ctx.drawImage(this.style.sprite, -w, -w, w+w, w+w);
+                     ctx.drawImage(emitter.textures[0], -w, -w, w+w, w+w);
                   });
                }
             });
+            emitter.textures.push(bitmaps[0]);
             var emitterHandle = new Phoria.PhysicsEntity();
             emitterHandle.explodeY = 5 + Rnd(5);
             emitterHandle.onScene(function() {
@@ -171,8 +172,9 @@ function onloadHandler()
                   emitter.rate = 300 + ~~Rnd(200);
                   
                   // change sprite style to star sparkle effect
+                  // select a random bitmap from the list of sparkle bitmap images
                   emitter.style.shademode = "callback";
-                  emitter.style.sprite = bitmaps[~~Rnd(bitmaps.length - 1) + 1];
+                  emitter.textures[0] = bitmaps[~~Rnd(bitmaps.length - 1) + 1];
                }
                if (Date.now() - this.exploded > 200)
                {

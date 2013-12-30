@@ -119,7 +119,7 @@ function init()
       style: {
          objectsortmode: "sorted",
          shademode: "sprite",
-         sprite: bitmaps[1]
+         sprite: 0
       },
       onParticle: function (p) {
          // style references the parent emitter config - so clone a new one and modify it
@@ -157,6 +157,7 @@ function init()
          }
       }
    });
+   emitter.textures.push(bitmaps[1]);
    cube.children.push(emitter);
 
    var pause = false;

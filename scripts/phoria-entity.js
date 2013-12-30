@@ -182,21 +182,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
       this.edges = [];
       this.polygons = [];
       this.textures = [];
-      
-      // default rendering style
-      this.style = {
-         color: [128,128,128],
-         diffuse: 1.0,
-         specular: 0,
-         drawmode: "solid",
-         shademode: "lightsource",
-         fillmode: "inflate",
-         objectsortmode: "sorted",
-         geometrysortmode: "automatic",
-         linewidth: 1.0,
-         linescale: 0.0,
-         doublesided: false
-      };
+      this.style = Phoria.Entity.createStyle();
       
       return this;
    };
@@ -232,7 +218,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
       if (desc.points) e.points = desc.points;
       if (desc.polygons) e.polygons = desc.polygons;
       if (desc.edges) e.edges = desc.edges;
-      if (desc.style) e.style = Phoria.Util.merge(e.style, desc.style);
+      if (desc.style) Phoria.Util.combine(e.style, desc.style);
       if (desc.onRender) e.onRender(desc.onRender);
       
       // generate normals - can call generate...() if manually changing points/polys at runtime
@@ -241,6 +227,30 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
       //e.generateVertexNormals();
       
       return e;
+   };
+   
+   /**
+    * Static helper to construct a default style object with all values populated.
+    * 
+    * @param s {Object}    Optional style object literal to merge into the default style.
+    */
+   Phoria.Entity.createStyle = function(s)
+   {
+      var style = {
+         color: [128,128,128],
+         diffuse: 1.0,
+         specular: 0,
+         drawmode: "solid",
+         shademode: "lightsource",
+         fillmode: "inflate",
+         objectsortmode: "sorted",
+         geometrysortmode: "automatic",
+         linewidth: 1.0,
+         linescale: 0.0,
+         doublesided: false
+      };
+      if (s) Phoria.Util.combine(style, s);
+      return style;
    };
    
    Phoria.Util.extend(Phoria.Entity, Phoria.BaseEntity, {
@@ -610,6 +620,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
          linewidth: 5,
          linescale: 2
       };
+      this.textures = [];
       
       this._lastEmitTime = Date.now();
       
@@ -651,7 +662,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
       if (desc.lifetime) e.lifetime = desc.lifetime;
       if (desc.lifetimeRnd) e.lifetimeRnd = desc.lifetimeRnd;
       if (desc.gravity !== undefined) e.gravity = desc.gravity;
-      if (desc.style) e.style = Phoria.Util.merge(e.style, desc.style);
+      if (desc.style) Phoria.Util.combine(e.style, desc.style);
       if (desc.onParticle) e.onParticle(desc.onParticle);
       
       return e;
@@ -744,6 +755,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
                particle.velocity = vel;
                particle.gravity = this.gravity;
                particle.style = this.style;
+               particle.textures = this.textures;
                if (this.lifetime !== 0)
                {
                   particle._gravetime = Math.floor(now + this.lifetime + (this.lifetimeRnd * Math.random()) - this.lifetimeRnd*0.5);

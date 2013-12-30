@@ -69,9 +69,10 @@ function onloadHandler()
          shademode: "sprite",
          linewidth: 32,
          objectsortmode: "front",
-         sprite: bitmaps[0]
+         sprite: 0
       }
    });
+   emitter.textures.push(bitmaps[0]);
    scene.graph.push(emitter);
 
    var pause = false;
