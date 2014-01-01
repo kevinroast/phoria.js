@@ -23,6 +23,8 @@ http://www.kevs3d.co.uk/dev/phoria/test1.html - test 1 - animated point lights a
 
 http://www.kevs3d.co.uk/dev/phoria/test1d.html - test 1d - live debug information in a scene
 
+http://www.kevs3d.co.uk/dev/phoria/test1t.html - test 1t - transparent polygons, plain and textured
+
 http://www.kevs3d.co.uk/dev/phoria/test2i.html - test 2 - example WaveFront .obj file importer
 
 http://www.kevs3d.co.uk/dev/phoria/test3.html - test 3 - sphere with point lighting
