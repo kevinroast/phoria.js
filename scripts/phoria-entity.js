@@ -197,6 +197,8 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     *       color: [128,128,128],      // RGB colour of the object surface
     *       specular: 0,               // if not zero, specifies specular shinyness power - e.g. values like 16 or 64
     *       diffuse: 1.0,              // material diffusion generally ranges from 0-1
+    *       emit: 0.0,                 // material emission (glow) 0-1
+    *       opacity: 1.0,              // material opacity 0-1
     *       drawmode: "solid",         // one of "point", "wireframe", "solid"
     *       shademode: "lightsource",  // one of "plain", "lightsource", "sprite", "callback" (only for point rendering)
     *       fillmode: "inflate",       // one of "fill", "filltwice", "inflate", "fillstroke", "hiddenline"
@@ -247,6 +249,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
          geometrysortmode: "automatic",
          linewidth: 1.0,
          linescale: 0.0,
+         opacity: 1.0,
          doublesided: false
       };
       if (s) Phoria.Util.combine(style, s);

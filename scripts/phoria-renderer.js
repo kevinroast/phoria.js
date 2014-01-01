@@ -550,7 +550,7 @@
              clip = obj._clip,
              vertices = poly.vertices,
              color = poly.color ? poly.color : obj.style.color,
-             fillStyle = null, rgb, emit = 0;
+             fillStyle = null, rgb, emit = 0.0, opacity = (poly.opacity ? poly.opacity : obj.style.opacity);
          
          // clip of poly if all vertices have been marked for clipping
          var clippoly = 1;
@@ -635,6 +635,7 @@
                ctx.transform(m11, m12, m21, m22, dx, dy);
                
                // Draw the whole texture image. Transform and clip will map it onto the correct output polygon.
+               ctx.globalAlpha = opacity;
                ctx.drawImage(bitmap, 0, 0);
             };
             
@@ -711,6 +712,7 @@
                      ctx.lineTo(inflatedVertices[i][0], inflatedVertices[i][1]);
                   }
                   ctx.closePath();
+                  ctx.globalAlpha = opacity;
                   ctx.fill();
                }
             }
@@ -744,7 +746,7 @@
                ctx.closePath();
             }
             
-            fillStyle = "rgb(" + fillStyle + ")";
+            fillStyle = "rgba(" + fillStyle + "," + opacity + ")";
             switch (obj.style.fillmode)
             {
                case "fill":

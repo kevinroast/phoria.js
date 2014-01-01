@@ -718,8 +718,8 @@ Phoria.EPSILON = 0.000001;
     *       fnSuccess: function  // callback function to execute once object is loaded - function({points:[], polygons:[]})
     *       fnFailure: function  // optional callback function to execute if an error occurs
     *       scale: 1.0           // optional scaling factor - 1.0 is the default
-    *       scaleTo: 1.0         // optional automatically scale object to a specific size (TODO: implement)
-    *       center: false        // optional centering of imported geometry to the origin (TODO: implement)
+    *       scaleTo: 1.0         // optional automatically scale object to a specific size
+    *       center: false        // optional centering of imported geometry to the origin
     *       reorder: false       // true to switch order of poly vertices if back-to-front ordering
     *    }
     */
