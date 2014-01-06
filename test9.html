@@ -161,7 +161,7 @@ function onloadHandler()
             });
             emitter.textures.push(bitmaps[0]);
             var emitterHandle = new Phoria.PhysicsEntity();
-            emitterHandle.explodeY = 5 + Rnd(5);
+            emitterHandle.explodeY = 7 + Rnd(3);
             emitterHandle.onScene(function() {
                if (!this.exploded && this.explodeY < this.worldposition[1])
                {

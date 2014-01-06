@@ -398,6 +398,7 @@
                case "wireframe":
                {
                   ctx.lineWidth = obj.style.linewidth;
+                  ctx.globalAlpha = obj.style.opacity;
                   if (obj.style.shademode === "plain")
                   {
                      ctx.strokeStyle = "rgb(" + obj.style.color[0] + "," + obj.style.color[1] + "," + obj.style.color[2] + ")";
@@ -421,7 +422,7 @@
                
                case "point":
                {
-                  // assert to ensure that the texture image referenced by the 'sprite' inde exists
+                  // assert to ensure that the texture image referenced by the 'sprite' index exists
                   if (obj.style.shademode === "sprite" && obj.style.sprite !== undefined)
                   {
                      if (!obj.textures)
@@ -433,6 +434,7 @@
                         throw new Error("Entity has shademode 'sprite' index but references missing texture on parent emitter.")
                      }
                   }
+                  ctx.globalAlpha = obj.style.opacity;
                   var coords = obj._coords;
                   if (obj.style.shademode === "plain")
                   {

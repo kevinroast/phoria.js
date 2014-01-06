@@ -26,6 +26,7 @@
     *    id: string,
     *    matrix: mat4,
     *    children: [...],
+    *    onBeforeScene: function() {...},
     *    onScene: function() {...},
     *    disabled: boolean
     * }
@@ -37,6 +38,7 @@
       if (desc.id) e.id = desc.id;
       if (desc.matrix) e.matrix = desc.matrix;
       if (desc.children) e.children = desc.children;
+      if (desc.onBeforeScene) e.onBeforeScene(desc.onBeforeScene);
       if (desc.onScene) e.onScene(desc.onScene);
       if (desc.disabled !== undefined) e.disabled = desc.disabled;
       
@@ -58,12 +60,27 @@
       // {boolean} set to true to disable processing of the Entity and all child entities during the modelView pipeline
       disabled: false,
       
+      onBeforeSceneHandlers: null,
       onSceneHandlers: null,
       
       /**
-       * Add an onScene event handler function to the entity. Called at the start of each scene processing cycle.
+       * Add an onBeforeSceneHandlers event handler function to the entity. Called at the start of each scene
+       * processing cycle before the local matrix has been multipled by the parent matrix.
        * 
-       * @param fn {function}    onScene handler signature: function(Phoria.Scene, time) this = Phoria.Entity,
+       * @param fn {function}    onBeforeSceneHandlers handler signature: function(Phoria.Scene, time) this = Phoria.Entity,
+       *                         accepts [] of functions also
+       */
+      onBeforeScene: function onBeforeScene(fn)
+      {
+         if (this.onBeforeSceneHandlers === null) this.onBeforeSceneHandlers = [];
+         this.onBeforeSceneHandlers = this.onBeforeSceneHandlers.concat(fn);
+      },
+
+      /**
+       * Add an onScene event handler function to the entity. Called at the start of each scene processing cycle after the
+       * local matrix has been multiplied by the parent matrix. 
+       * 
+       * @param fn {function}    onScene handler signature: function(Phoria.Scene, matLocal, time) this = Phoria.Entity,
        *                         accepts [] of functions also
        */
       onScene: function onScene(fn)
@@ -394,7 +411,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
 
          debugEntity.onRender(function(ctx, x, y) {
             // render debug text
-            ctx.fillStyle = "#000";
+            ctx.fillStyle = "#333";
             ctx.font = "14pt Helvetica";
             var textPos = y;
             if (this.config.showId)
@@ -404,7 +421,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
             }
             if (this.config.showPosition)
             {
-               var p = debugEntity._worldcoords[0];
+               var p = entity.worldposition ? entity.worldposition : debugEntity._worldcoords[0];
                ctx.fillText("{x:" + p[0].toFixed(2) + ", y:" + p[1].toFixed(2) + ", z:" + p[2].toFixed(2) + "}", x, textPos);
             }
          });
@@ -452,7 +469,9 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     * to have a visible entity) but do represent a position in the scene.
     * 
     * Augment a prototype with this aspect to provide an easy way to keep track of a it's position in the scene after
-    * matrix transformations have occured.
+    * matrix transformations have occured. Examine worldposition at runtime (ensure not null) to get current position.
+    * 
+    * Set the initial position on object construction if the entity is not positioned at the origin by default.
     */
    Phoria.PositionalAspect.prototype =
    {
@@ -478,7 +497,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
    /**
     * PhysicsEntity builds on the basic entity class to provide very basic physics support. The entity maintains
     * a position and a velocity that can be manipulated via constant and impulse forces. It also optionally
-    * applies gravity. After the physics calculations the entity matrix is updates to the new position.
+    * applies gravity. After the physics calculations the entity matrix is updated to the new position.
     */
    Phoria.PhysicsEntity = function()
    {
@@ -490,8 +509,9 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
       this._acceleration = null;
       this.gravity = true;
       
-      // add handler to apply physics etc.
-      this.onScene(this.applyPhysics);
+      // add handlers to apply physics etc.
+      this.onBeforeScene(this.applyPhysics);
+      this.onScene(this.transformToScene);
       
       return this;
    };
@@ -538,7 +558,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
       },
       
       /**
-       * Apply an constant force to the entity
+       * Apply a constant force to the entity
        * @param f {Object} xyz tuple for the force direction
        */
       force: function force(f)
@@ -551,14 +571,16 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
        * Current velocity is updated by any acceleration that is set, by any constant
        * force that is set and also optionally by fixed gravity.
        */
-      applyPhysics: function applyPhysics(scene, matLocal, time)
+      applyPhysics: function applyPhysics(scene)
       {
-         // local transformation -> world
-         this.updatePosition(matLocal);
-         
+         /**
+          * NOTE: Physics simulation is updated in real-time regardless of the FPS of
+          *       the rest of the animation - set to ideal time (in secs) to avoid glitches
+          */
+         var time = 1000/60/1000;    // 60FPS in seconds
          var tt = time * time;
          
-         // apply impulse force
+         // apply impulse force if set then reset it to none
          if (this._acceleration)
          {
             this.velocity.x += (this._acceleration.x * tt);
@@ -573,16 +595,22 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
             this.velocity.y += (this._force.y * tt);
             this.velocity.z += (this._force.z * tt);
          }
-         // apply constant gravity if activated
+         // apply constant gravity force if activated
          if (this.gravity)
          {
             this.velocity.x += (Phoria.PhysicsEntity.GRAVITY.x * tt);
             this.velocity.y += (Phoria.PhysicsEntity.GRAVITY.y * tt);
             this.velocity.z += (Phoria.PhysicsEntity.GRAVITY.z * tt);
          }
-
+         
          // apply current velocity to position
          this.translate(vec3.fromXYZ(this.velocity));
+      },
+
+      transformToScene: function transformToScene(scene, matLocal)
+      {
+         // local transformation -> world
+         this.updatePosition(matLocal);
       }
    });
    Phoria.Util.augment(Phoria.PhysicsEntity, Phoria.PositionalAspect);
@@ -598,7 +626,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
 
    /**
     * Emitter is used to generate "particle" physics entities at a given rate per second with a flexible configuration
-    * of velocity and position starting point. The emitter itself is not rendered, but provides a style config that is
+    * of velocity and position starting point. The emitter itself is not rendered, but exposes a style config that is
     * applied to all child particle entities. An event handler 'onParticle' is provided to allow further customisation
     * of particles as they are generated.
     */
@@ -614,15 +642,14 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
       this.gravity = true;
       
       // default particle rendering style
-      this.style = {
-         color: [128,128,128],
-         drawmode: "point",
-         shademode: "plain",
-         geometrysortmode: "none",
-         objectsortmode: "sorted",
-         linewidth: 5,
-         linescale: 2
-      };
+      var style = Phoria.Entity.createStyle();
+      style.drawmode = "point";
+      style.shademode = "plain";
+      style.geometrysortmode = "none";
+      style.linewidth = 5;
+      style.linescale = 2;
+      this.style = style;
+      
       this.textures = [];
       
       this._lastEmitTime = Date.now();
@@ -640,7 +667,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
     *    positionRnd: {x:0,y:0,z:0}, // randomness to apply to the start position - default (0,0,0)
     *    rate: Number,               // particles per second to emit - default 0
     *    maximum: Number,            // maximum allowed particles (zero for unlimited) - default 1000
-    *    velocity: {x:0,y:0,z:0},    // start velocity of the particle - default (0,0,0)
+    *    velocity: {x:0,y:1,z:0},    // start velocity of the particle - default (0,1,0)
     *    velocityRnd: {x:0,y:0,z:0}, // randomness to apply to the velocity - default (0,0,0)
     *    lifetime: Number,           // lifetime in ms of the particle (zero for unlimited) - default 0
     *    lifetimeRnd: Number,        // lifetime randomness to apply - default 0
@@ -697,6 +724,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
       gravity: false,
       
       _lastEmitTime: 0,
+
       onParticleHandlers: null,
       
       /**
@@ -721,7 +749,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
          this.updatePosition(matLocal);
          
          // TODO: currently this assumes all direct children of the emitter are particles
-         //       if they are not - these calculation need to be changes to keep track...
+         //       if they are not - this calculation needs to be changed to keep track.
          
          // clean up expired particles - based on lifetime
          var now = Date.now();
@@ -740,7 +768,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
          var count = Math.floor((this.rate / 1000) * since);
          if (count > 0)
          {
-            // emit up to count value - also checking maximum to ensure total particle count
+            // emit up to count value - also checking maximum to ensure total particle count is met
             for (var c=0; c<count && (this.maximum === 0 || this.children.length < this.maximum); c++)
             {
                var pos = {x:this.position.x, y:this.position.y, z:this.position.z};
@@ -754,6 +782,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
                
                // create particle directly - avoid overhead of the more friendly factory method
                var particle = new Phoria.PhysicsEntity();
+               particle.position = pos;
                particle.points = [ pos ];
                particle.velocity = vel;
                particle.gravity = this.gravity;

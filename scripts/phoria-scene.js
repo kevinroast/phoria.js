@@ -306,12 +306,8 @@
       modelView: function modelView()
       {
          // time since last update in seconds
-         // we adjust the perceived time by dividing by the "ideal" time per frame we are aiming for i.e. 60fps
-         // this allows the physics to update more or less correctly even if framerate changes during the scene
          var now = Date.now(),
-             time = (now - this._lastTime),
-             frameMultipler = time / (1000/60);
-         time = time / frameMultipler * 0.001;
+             time = (now - this._lastTime) / 1000;
          this._lastTime = now;
          
          // prerender steps that are performed on each frame before objects are processed - setup matrices etc.
@@ -389,6 +385,16 @@
                // used to quickly lookup entities in event handlers without walking child lists etc.
                if (obj.id) entityById[obj.id] = obj;
                
+               // hook point for onBeforeScene event handlers - custom user handlers or added by entities during
+               // object construction - there can be multiple registered per entity
+               if (obj.onBeforeSceneHandlers !== null)
+               {
+                  for (var h=0; h<obj.onBeforeSceneHandlers.length; h++)
+                  {
+                     obj.onBeforeSceneHandlers[h].call(obj, this, time);
+                  }
+               }
+
                // multiply local with parent matrix to combine affine transformations
                var matLocal = obj.matrix;
                if (matParent)
