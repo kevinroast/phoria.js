@@ -75,11 +75,11 @@ function init()
    testCube.textures.push(bitmaps[0]);
    scene.graph.push(testCube);
 
-   cube = Phoria.Util.generateUnitCube(0.75);
-   var childCube = Phoria.Entity.create({
-      points: cube.points,
-      edges: cube.edges,
-      polygons: cube.polygons,
+   var geom = Phoria.Util.generateIcosahedron(1.5);
+   geom = Phoria.Util.subdivide(geom.points,geom.polygons);
+   var childObj = Phoria.Entity.create({
+      points: geom.points,
+      polygons: geom.polygons,
       style: {
          opacity: 0.5,
          fillmode: "fill",
@@ -87,7 +87,7 @@ function init()
       }
    });
    // add child object
-   testCube.children.push(childCube);
+   testCube.children.push(childObj);
    
    var blueLightObj = Phoria.Entity.create({
       points: [{x:0, y:2, z:-5}],
@@ -148,7 +148,7 @@ function init()
          // rotate local matrix of an object
          testCube.rotateY(0.5*Phoria.RADIANS);
          // translate local matrix of child object - will receive rotation from parent
-         childCube.identity().rotateX(Math.sin(Date.now() / 1000)*1).translateY(Math.sin(Date.now() / 1000) + 3);
+         childObj.identity().rotateX(Math.sin(Date.now() / 1000)*1).translateY(Math.sin(Date.now() / 1000) + 3);
          // translate visible light objects around the origin - will rotate child Light emitters
          var sine = Math.sin(Date.now() / 500);
          blueLightObj.identity().rotateY(rotates[0]+=1*Phoria.RADIANS).translateY(sine);
@@ -195,9 +195,8 @@ function init()
    f.add(scene.camera.up, "y").min(-10).max(10).step(0.1);
    f.add(scene.camera.up, "z").min(-10).max(10).step(0.1);
    f = gui.addFolder('Rendering');
-   f.add(testCube.style, "drawmode", ["point", "wireframe", "solid"]);
-   f.add(testCube.style, "shademode", ["plain", "lightsource"]);
-   f.add(testCube.style, "fillmode", ["fill", "filltwice", "inflate", "fillstroke", "hiddenline"]);
+   f.add(childObj.style, "shademode", ["plain", "lightsource"]);
+   f.add(childObj.style, "fillmode", ["fill", "filltwice", "inflate", "fillstroke"]);
    f.open();
    
    // start animation

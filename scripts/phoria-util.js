@@ -531,6 +531,54 @@ Phoria.EPSILON = 0.000001;
          polygons: [{vertices:[4, 8, 7]}, {vertices:[4, 7, 9]}, {vertices:[5, 6, 11]}, {vertices:[5, 10, 6]}, {vertices:[0, 4, 3]}, {vertices:[0, 3, 5]}, {vertices:[2, 7, 1]}, {vertices:[2, 1, 6]}, {vertices:[8, 0, 11]}, {vertices:[8, 11, 1]}, {vertices:[9, 10, 3]}, {vertices:[9, 2, 10]}, {vertices:[8, 4, 0]}, {vertices:[11, 0, 5]}, {vertices:[4, 9, 3]}, {vertices:[5, 3, 10]}, {vertices:[7, 8, 1]}, {vertices:[6, 1, 11]}, {vertices:[7, 2, 9]}, {vertices:[6, 10, 2]}]
       };
    }
+   
+   /**
+    * Subdivide the given vertices and polygons - using a basic normalised triangle subdivision algorithm.
+    * From OpenGL tutorial chapter "Subdividing to Improve a Polygonal Approximation to a Surface".
+    * 
+    * TODO: currently this subdivide does not reuse vertices that are shared by polygons!
+    */
+   Phoria.Util.subdivide = function subdivide(v, p)
+   {
+      var vertices = [],
+          polys = [];
+      
+      var fnNormalize = function(vn) {
+         var len = vn.x*vn.x + vn.y*vn.y + vn.z*vn.z;
+         len = 1 / Math.sqrt(len);
+         vn.x *= len;
+         vn.y *= len;
+         vn.z *= len;
+      }
+      var fnSubDivide = function(v1, v2, v3) {
+         var v12 = {x:0,y:0,z:0}, v23 = {x:0,y:0,z:0}, v31 = {x:0,y:0,z:0};
+         
+         v12.x = v1.x+v2.x; v12.y = v1.y+v2.y; v12.z = v1.z+v2.z;
+         v23.x = v2.x+v3.x; v23.y = v2.y+v3.y; v23.z = v2.z+v3.z;
+         v31.x = v3.x+v1.x; v31.y = v3.y+v1.y; v31.z = v3.z+v1.z;
+         
+         fnNormalize(v12);
+         fnNormalize(v23);
+         fnNormalize(v31);
+         
+         var pn = vertices.length;
+         vertices.push(v1,v2,v3,v12,v23,v31);
+         polys.push({vertices: [pn+0, pn+3, pn+5]});
+         polys.push({vertices: [pn+1, pn+4, pn+3]});
+         polys.push({vertices: [pn+2, pn+5, pn+4]});
+         polys.push({vertices: [pn+3, pn+4, pn+5]});
+      }
+      for (var i=0,vs; i<p.length; i++)
+      {
+         vs = p[i].vertices;
+         fnSubDivide.call(this, v[vs[0]], v[vs[1]], v[vs[2]]);
+      }
+      
+      return {
+         points: vertices,
+         polygons: polys
+      };
+   }
 
    /**
     * {
