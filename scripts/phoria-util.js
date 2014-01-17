@@ -579,6 +579,55 @@ Phoria.EPSILON = 0.000001;
          polygons: polys
       };
    }
+   
+   /**
+    * Generate geometry for a cylinder
+    * 
+    * @param radius  Radius of the cylinder
+    * @param length  Length of the cylinder
+    * @param strips  Number of strips around the cylinder
+    */
+   Phoria.Util.generateCylinder = function generateCylinder(radius, length, strips)
+   {
+      var points = [], polygons = [], edges = [];
+      var inc = 2*Math.PI / strips;
+      for (var s=0, offset=0; s<=strips; s++)
+      {
+         points.push({
+            x: Math.cos(offset) * radius,
+            z: Math.sin(offset) * radius,
+            y: length/2
+         });
+         points.push({
+            x: Math.cos(offset) * radius,
+            z: Math.sin(offset) * radius,
+            y: -length/2
+         });
+         offset += inc;
+         if (s !== 0)
+         {
+            // quad strip
+            polygons.push({vertices: [s*2-2, s*2, s*2+1, s*2-1]});
+            // edges
+            edges.push({a:s*2, b:s*2-2},{a:s*2-2,b:s*2-1},{a:s*2+1,b:s*2-1});
+            if (s === strips - 1)
+            {
+               // end cap polygons
+               var vs = [];
+               for (var i=strips; i>=0; i--) vs.push(i*2);
+               polygons.push({vertices: vs});
+               vs = [];
+               for (var i=0; i<strips; i++) vs.push(i*2+1);
+               polygons.push({vertices: vs});
+            }
+         }
+      }
+      return {
+         points: points,
+         edges: edges,
+         polygons: polygons
+      };
+   }
 
    /**
     * {
