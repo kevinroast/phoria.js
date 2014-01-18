@@ -841,7 +841,7 @@ Phoria.EPSILON = 0.000001;
     */
    Phoria.Util.importGeometryWavefront = function importGeometryWavefront(config)
    {
-      var vertex = [], faces = [];
+      var vertex = [], faces = [], uvs = [];
       var re = /\s+/;   // 1 or more spaces can separate tokens within a line
       var scale = config.scale || 1;
       var minx, miny, minz, maxx, maxy, maxz;
@@ -872,23 +872,41 @@ Phoria.EPSILON = 0.000001;
                   }
                   break;
                   
+                  case 'vt':
+                  {
+                     var u = parseFloat(line[1]),
+                         v = parseFloat(line[2]);
+                     uvs.push([u,v]);
+                  }
+                  break;
+                  
                   case 'f':
                   {
-                     var face = lines[i].split(re);
-                     face.splice(0, 1); // remove "f"
-                     var vertices = [];
-                     for (var j = 0,vindex; j < face.length; j++)
+                     line.splice(0, 1); // remove "f"
+                     var vertices = [], uvcoords = [];
+                     for (var j = 0,vindex,vps; j < line.length; j++)
                      {
-                        vindex = face[config.reorder ? face.length - j - 1 : j];
+                        vindex = line[config.reorder ? line.length - j - 1 : j];
                         // deal with /r/n line endings
                         if (vindex.length !== 0)
                         {
                            // OBJ format vertices are indexed from 1
-                           vertices.push(parseInt(vindex.split('/')[0]) - 1);
+                           vps = vindex.split('/');
+                           vertices.push(parseInt(vps[0]) - 1);
+                           // gather texture coords
+                           if (vps.length > 1 && vindex.indexOf("//") === -1)
+                           {
+                              var uv = parseInt(vps[1]) - 1;
+                              if (uvs.length > uv)
+                              {
+                                 uvcoords.push(uvs[uv][0], uvs[uv][1]);
+                              }
+                           }
                         }
                      }
-                     faces.push({'vertices': vertices});
-                     // TODO: texture coords
+                     var poly = {'vertices': vertices};
+                     faces.push(poly);
+                     if (uvcoords.length !== 0) poly.uvs = uvcoords;
                   }
                   break;
                }
