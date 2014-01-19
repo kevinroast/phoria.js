@@ -142,6 +142,18 @@
          mat4.rotateZ(this.matrix, this.matrix, rad);
          return this;
       },
+      
+      /**
+       * Rotate entity matrix by the given yaw (heading), pitch (elevation) and roll (bank) Euler angles.
+       * @param {Number} yaw the yaw/heading angle in radians
+       * @param {Number} pitch the pitch/elevation angle in radians
+       * @param {Number} roll the roll/bank angle in radians
+       */
+      rotateYPR: function rotateYPR(yaw, pitch, roll)
+      {
+         var m = mat4.fromYPR(yaw, pitch, roll);
+         mat4.multiply(this.matrix, this.matrix, m);
+      },
 
       translate: function translate(vec)
       {
