@@ -31,7 +31,7 @@
     *    disabled: boolean
     * }
     */
-   Phoria.BaseEntity.create = function(desc, e)
+   Phoria.BaseEntity.create = function create(desc, e)
    {
       // merge structures to generate entity
       if (!e) e = new Phoria.BaseEntity();
@@ -241,7 +241,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     *    onRender: function() {...}
     * }
     */
-   Phoria.Entity.create = function(desc, e)
+   Phoria.Entity.create = function create(desc, e)
    {
       // merge structures to generate entity
       if (!e) e = new Phoria.Entity();
@@ -265,7 +265,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     * 
     * @param s {Object}    Optional style object literal to merge into the default style.
     */
-   Phoria.Entity.createStyle = function(s)
+   Phoria.Entity.createStyle = function createStyle(s)
    {
       var style = {
          color: [128,128,128],
@@ -390,7 +390,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     *    showPosition: boolean
     * }
     */
-   Phoria.Entity.debug = function(entity, config)
+   Phoria.Entity.debug = function debug(entity, config)
    {
       // search child list for debug entity
       var id = "Phoria.Debug" + (entity.id ? (" "+entity.id) : "");
@@ -537,7 +537,7 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
     *    gravity: boolean
     * }
     */
-   Phoria.PhysicsEntity.create = function(desc)
+   Phoria.PhysicsEntity.create = function create(desc)
    {
       // merge structures to generate entity
       var e = new Phoria.PhysicsEntity();
@@ -688,7 +688,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
     *    onParticle: function() {...}// particle create callback function
     * }
     */
-   Phoria.EmitterEntity.create = function(desc)
+   Phoria.EmitterEntity.create = function create(desc)
    {
       // TODO: provide an emitter() callback function - which could be used to apply velocity or whatever
       //       rather than assuming all particle generation will use the parameters below
@@ -872,7 +872,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
    /**
     * Factory create method - object literal Light descripton
     */
-   Phoria.DistantLight.create = function(desc)
+   Phoria.DistantLight.create = function create(desc)
    {
       // merge structures to generate entity
       var e = new Phoria.DistantLight();
@@ -933,7 +933,7 @@ Phoria.PhysicsEntity.GRAVITY = {x:0, y:-9.8, z:0};
     *    attenuationFactor: "none"|"linear"|"squared"
     * }
     */
-   Phoria.PointLight.create = function(desc)
+   Phoria.PointLight.create = function create(desc)
    {
       // merge structures to generate entity
       var e = new Phoria.PointLight();

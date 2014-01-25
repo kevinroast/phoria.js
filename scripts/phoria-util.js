@@ -571,8 +571,9 @@ Phoria.EPSILON = 0.000001;
    }
    
    /**
-    * Subdivide the given vertices and polygons - using a basic normalised triangle subdivision algorithm.
+    * Subdivide the given vertices and triangles - using a basic normalised triangle subdivision algorithm.
     * From OpenGL tutorial chapter "Subdividing to Improve a Polygonal Approximation to a Surface".
+    * NOTE: this only works on triangles or quads not higher order polygons.
     * 
     * TODO: currently this subdivide does not reuse vertices that are shared by polygons!
     */
@@ -609,7 +610,15 @@ Phoria.EPSILON = 0.000001;
       for (var i=0,vs; i<p.length; i++)
       {
          vs = p[i].vertices;
-         fnSubDivide.call(this, v[vs[0]], v[vs[1]], v[vs[2]]);
+         if (vs.length === 3)
+         {
+            fnSubDivide.call(this, v[vs[0]], v[vs[1]], v[vs[2]]);
+         }
+         else if (vs.length === 4)
+         {
+            fnSubDivide.call(this, v[vs[0]], v[vs[1]], v[vs[2]]);
+            fnSubDivide.call(this, v[vs[2]], v[vs[3]], v[vs[0]]);
+         }
       }
       
       return {
@@ -1016,6 +1025,93 @@ Phoria.EPSILON = 0.000001;
             }
          }
       });
+   }
+
+})();
+
+
+/**
+ * View helper class. Provides view related utilities such as high-level event handling.
+ * 
+ * @class Phoria.View
+ */
+(function() {
+   "use strict";
+   
+   Phoria.View = {};
+   
+   Phoria.View.events = {};
+   
+   Phoria.View.addMouseEvents = function addMouseEvents(el)
+   {
+      if (el.id)
+      {
+         // mouse rotation and position tracking instance
+         var mouse = {
+            velocityH: 0,        // final target value from horizontal mouse movement 
+            velocityLastH: 0,
+            positionX: 0,
+            clickPositionX: 0,
+            velocityV: 0,        // final target value from vertical mouse movement 
+            velocityLastV: 0,
+            positionY: 0,
+            clickPositionY: 0
+         };
+         
+         // set object reference for our events
+         Phoria.View.events[el.id] = mouse;
+         
+         mouse.onMouseMove = function onMouseMove(evt) {
+         	mouse.positionX = evt.clientX;
+         	mouse.velocityH = mouse.velocityLastH + (mouse.positionX - mouse.clickPositionX) * 0.5;
+         	mouse.positionY = evt.clientY;
+         	mouse.velocityV = mouse.velocityLastV + (mouse.positionY - mouse.clickPositionY) * 0.5;
+         };
+         
+         mouse.onMouseUp = function onMouseUp(evt) {
+         	el.removeEventListener('mousemove', mouse.onMouseMove, false);
+         };
+         
+         mouse.onMouseOut = function onMouseOut(evt) {
+         	el.removeEventListener('mousemove', mouse.onMouseMove, false);
+         };
+         
+         mouse.onMouseDown = function onMouseDown(evt) {
+         	evt.preventDefault();
+         	el.addEventListener('mousemove', mouse.onMouseMove, false);
+         	mouse.clickPositionX = evt.clientX;
+         	mouse.velocityLastH = mouse.velocityH;
+         	mouse.clickPositionY = evt.clientY;
+         	mouse.velocityLastV = mouse.velocityV;
+         };
+         
+         el.addEventListener('mousedown', mouse.onMouseDown, false);
+         el.addEventListener('mouseup', mouse.onMouseUp, false);
+         el.addEventListener('mouseout', mouse.onMouseOut, false);
+         
+         return mouse;
+      }
+   }
+   
+   Phoria.View.removeMouseEvents = function removeMouseEvents(el)
+   {
+      if (el.id)
+      {
+         var mouse = Phoria.View.events[el.id];
+         if (mouse)
+         {
+            el.removeEventListener('mousemove', mouse.onMouseMove, false);
+            el.removeEventListener('mousedown', mouse.onMouseDown, false);
+            el.removeEventListener('mouseup', mouse.onMouseUp, false);
+            el.removeEventListener('mouseout', mouse.onMouseOut, false);
+            Phoria.View.events[el.id] = null;
+         }
+      }
+   }
+   
+   Phoria.View.getMouseEvents = function getMouseEvents(el)
+   {
+      return Phoria.View.events[el.id];
    }
 
 })();
