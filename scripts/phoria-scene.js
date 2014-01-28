@@ -264,7 +264,7 @@
       _entities: null,
 
       _lastTime: 0,
-      _cameraPosition: null,
+      _cameraPosition: null,        // current camera position as vec4
       _perspectiveScale: 0.0,
 
       /**

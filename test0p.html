@@ -51,50 +51,93 @@ function onloadHandler()
          objectsortmode: "back"
       }
    }));
-   var c = Phoria.Util.generateUnitCube(1.5);
-   var cube = Phoria.Entity.create({
-      points: c.points,
-      edges: c.edges,
-      polygons: c.polygons
-   });
-   for (var i=0; i<6; i++)
-   {
-      cube.polygons[i].color = [42*i, 256-(42*i), (128+(42*i))%256];
-   }
-   scene.graph.push(cube);
    
-   Phoria.Entity.debug(cube, {
-      showAxis: true
+   var c1 = Phoria.Util.generateUnitCube();
+   var cube1 = Phoria.Entity.create({
+      id: "Cube Red",
+      points: c1.points,
+      polygons: c1.polygons,
+      style: {
+         color: [120, 0, 0]
+      }
    });
+   cube1.scaleN(1.25).rotateY(0.5).translateX(3);
+   scene.graph.push(cube1);
+   
+   var c2 = Phoria.Util.generateUnitCube();
+   var cube2 = Phoria.Entity.create({
+      id: "Cube Blue",
+      points: c2.points,
+      polygons: c2.polygons,
+      style: {
+         color: [0, 0, 120]
+      }
+   });
+   cube2.rotateY(1.5).translateZ(-4);
+   scene.graph.push(cube2);
+   
+   var c3 = Phoria.Util.generateUnitCube();
+   var cube3 = Phoria.Entity.create({
+      id: "Cube Green",
+      points: c3.points,
+      edges: c3.edges,
+      polygons: c3.polygons,
+      style: {
+         color: [0, 120, 0]
+      }
+   });
+   cube3.scaleN(0.7).rotateX(0.8).translateY(3);
+   scene.graph.push(cube3);
    
    // add a light
    scene.graph.push(Phoria.DistantLight.create({
-      direction: {x:0, y:-0.5, z:1}
+      direction: {x:0, y:-0.5, z:1},
+      intensity: 1.25
    }));
    
-   
    // mouse rotation and position tracking
-   var mouse = Phoria.View.addMouseEvents(canvas);
-   
-   // keep track of rotation
-   var rot = {
-      x: 0, y: 0, z: 0,
-      velx: 0, vely: 0, velz: 0,
-      nowx: 0, nowy: 0, nowz: 0,
-      ratio: 0.1
-   };
-
+   var lastPicked = null;
+   var timer = null;
+   var mouse = Phoria.View.addMouseEvents(canvas, function() {
+      // pick object detection on mouse click
+      var cpv = Phoria.View.calculateClickPointAndVector(scene, mouse.clickPositionX, mouse.clickPositionY);
+      var intersects = Phoria.View.getIntersectedObjects(scene, cpv.clickPoint, cpv.clickVector);
+      
+      document.getElementById("picked").innerHTML = "Selected: " + (intersects.length !== 0 ? intersects[0].entity.id : "[none]");
+      
+      if (lastPicked !== null)
+      {
+         lastPicked.style.color = lastPicked.oldcolor;
+         lastPicked.style.emit = 0;
+         lastPicked = null;
+      }
+      if (intersects.length !== 0)
+      {
+         var obj = intersects[0].entity;
+         obj.oldcolor = obj.style.color;
+         obj.style.color = [255,255,255];
+         obj.style.emit = 0.5;
+         lastPicked = obj;
+         clearInterval(timer);
+         timer = setTimeout(function() {
+            if (lastPicked !== null)
+            {
+               lastPicked.style.color = lastPicked.oldcolor;
+               lastPicked.style.emit = 0;
+               lastPicked = null;
+            }
+         },300);
+      }
+   });
    var pause = false;
    var fnAnimate = function() {
       if (!pause)
       {
-         // rotate local matrix of the cube
-         rot.nowx += (rot.velx = (mouse.velocityV - rot.x - rot.nowx) * rot.ratio);
-         rot.nowy += (rot.vely = (rot.y - rot.nowy) * rot.ratio);
-         rot.nowz += (rot.velz = (mouse.velocityH - rot.z - rot.nowz) * rot.ratio);
+         // rotate cubes
+         cube1.rotateY(0.5 * Phoria.RADIANS);
+         cube2.rotateX(0.5 * Phoria.RADIANS);
+         cube3.rotateZ(0.5 * Phoria.RADIANS);
          
-         cube.rotateX(-rot.velx*Phoria.RADIANS).rotateY(-rot.vely*Phoria.RADIANS).rotateZ(-rot.velz*Phoria.RADIANS);
-
          // execute the model view 3D pipeline and render the scene
          scene.modelView();
          renderer.render(scene);
@@ -108,7 +151,6 @@ function onloadHandler()
    f.add(scene.perspective, "fov").min(5).max(175);
    f.add(scene.perspective, "near").min(1).max(100);
    f.add(scene.perspective, "far").min(1).max(1000);
-   //f.open();
    f = gui.addFolder('Camera LookAt');
    f.add(scene.camera.lookat, "x").min(-100).max(100);
    f.add(scene.camera.lookat, "y").min(-100).max(100);
@@ -123,11 +165,6 @@ function onloadHandler()
    f.add(scene.camera.up, "x").min(-10).max(10).step(0.1);
    f.add(scene.camera.up, "y").min(-10).max(10).step(0.1);
    f.add(scene.camera.up, "z").min(-10).max(10).step(0.1);
-   f = gui.addFolder('Spin Local Axis (or use mouse)');
-   f.add(rot, "x").min(-180).max(180);
-   f.add(rot, "y").min(-180).max(180);
-   f.add(rot, "z").min(-180).max(180);
-   f.open();
    
    // key binding
    document.addEventListener('keydown', function(e) {
@@ -149,6 +186,7 @@ function onloadHandler()
    
    <body style="background-color: #bfbfbf">
       <canvas id="canvas" width="768" height="512" style="background-color: #eee"></canvas>
+      <div style="margin-top: -25px; margin-left: 300px; position: absolute" id="picked">Selected: [none]</div>
       <div><a style="color:#225588;text-decoration:none;" href="./index.html">&lt;&lt; Phoria demos</a></div>
    </body>
 </html>

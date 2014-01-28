@@ -1,5 +1,6 @@
 /**
  * @fileoverview phoria - Utilities and helpers, including root namespace.
+ * Polar/planer coordinate conversions and and polygon/line intersection methods - contribution from Ruan Moolman.
  * @author Kevin Roast
  * @date 10th April 2013
  */
@@ -1026,92 +1027,199 @@ Phoria.EPSILON = 0.000001;
          }
       });
    }
-
-})();
-
-
-/**
- * View helper class. Provides view related utilities such as high-level event handling.
- * 
- * @class Phoria.View
- */
-(function() {
-   "use strict";
    
-   Phoria.View = {};
-   
-   Phoria.View.events = {};
-   
-   Phoria.View.addMouseEvents = function addMouseEvents(el)
+   Phoria.Util.calculatePolarFromPlanar = function calculatePolarFromPlanar(planar)
    {
-      if (el.id)
+      // array positions correspond to: r = [0], t = [1], p = [2]
+      var point = new vec3.create();
+      // r is radius and equals the length of the planar vector
+      point[0] = vec3.length(planar);
+      // t is theta and represents the vertical angle from the z axis to the point
+      point[1] = Math.acos(planar[2] / point[0]);
+      // p is phi and represents the horizontal angle from the x axis to the point
+      if (planar[0] !== 0)
       {
-         // mouse rotation and position tracking instance
-         var mouse = {
-            velocityH: 0,        // final target value from horizontal mouse movement 
-            velocityLastH: 0,
-            positionX: 0,
-            clickPositionX: 0,
-            velocityV: 0,        // final target value from vertical mouse movement 
-            velocityLastV: 0,
-            positionY: 0,
-            clickPositionY: 0
-         };
-         
-         // set object reference for our events
-         Phoria.View.events[el.id] = mouse;
-         
-         mouse.onMouseMove = function onMouseMove(evt) {
-         	mouse.positionX = evt.clientX;
-         	mouse.velocityH = mouse.velocityLastH + (mouse.positionX - mouse.clickPositionX) * 0.5;
-         	mouse.positionY = evt.clientY;
-         	mouse.velocityV = mouse.velocityLastV + (mouse.positionY - mouse.clickPositionY) * 0.5;
-         };
-         
-         mouse.onMouseUp = function onMouseUp(evt) {
-         	el.removeEventListener('mousemove', mouse.onMouseMove, false);
-         };
-         
-         mouse.onMouseOut = function onMouseOut(evt) {
-         	el.removeEventListener('mousemove', mouse.onMouseMove, false);
-         };
-         
-         mouse.onMouseDown = function onMouseDown(evt) {
-         	evt.preventDefault();
-         	el.addEventListener('mousemove', mouse.onMouseMove, false);
-         	mouse.clickPositionX = evt.clientX;
-         	mouse.velocityLastH = mouse.velocityH;
-         	mouse.clickPositionY = evt.clientY;
-         	mouse.velocityLastV = mouse.velocityV;
-         };
-         
-         el.addEventListener('mousedown', mouse.onMouseDown, false);
-         el.addEventListener('mouseup', mouse.onMouseUp, false);
-         el.addEventListener('mouseout', mouse.onMouseOut, false);
-         
-         return mouse;
+         if (planar[0] > 0)
+            point[2] = Math.atan(planar[1] / planar[0]);
+         else
+            point[2] = Math.PI + Math.atan(planar[1] / planar[0]);
+      }
+      // if x = 0
+      else
+      {
+         if (planar[1] > 0)
+            point[2] = Math.PI / 2;
+         else
+            point[2] = Math.PI * 3 / 2;
+      }
+      return point;
+   }
+
+   Phoria.Util.calculatePlanarFromPolar = function calculatePlanarFromPolar(polar)
+   {
+      return new vec3.fromValues(
+         // calculate x value from polar coordinates
+         Math.round(polar[0] * Math.sin(polar[1]) * Math.cos(polar[2]) * 100) / 100,
+         // calculate y value from polar coordinates
+         Math.round(polar[0] * Math.sin(polar[1]) * Math.sin(polar[2]) * 100) / 100,
+         // calculate z value from polar coordinates
+         Math.round(polar[0] * Math.cos(polar[1]) * 100) / 100);
+   }
+
+   Phoria.Util.planeLineIntersection = function planeLineIntersection(planeNormal, planePoint, lineVector, linePoint)
+   {
+      // planeNormal . (plane - planePoint) = 0
+      // line = linePoint + lineScalar * lineVector
+      // intersect where line = plane, thus
+      // planeNormal . (linePoint + lineScalar * lineVector - planePoint) = 0
+      // giving: lineScalar = planeNormal . (planePoint - linePoint) / planeNormal . lineVector
+      var dotProduct = vec3.dot(lineVector, planeNormal);
+      // check that click vector is not parallel to polygon
+      if (dotProduct !== 0)
+      {
+         var pointVector = new vec3.create();
+         vec3.subtract(pointVector, planePoint, linePoint);
+         var lineScalar = vec3.dot(planeNormal, pointVector) / dotProduct;
+         var intersection = vec3.create();
+         vec3.scaleAndAdd(intersection, linePoint, lineVector, lineScalar);
+         return intersection;
+      }
+      else
+      {
+         // return null if parallel, as the vector will never intersect the plane
+         return null;
       }
    }
-   
-   Phoria.View.removeMouseEvents = function removeMouseEvents(el)
+
+   Phoria.Util.intersectionInsidePolygon = function intersectionInsidePolygon(polygon, points, intersection)
    {
-      if (el.id)
+      // get absolute values of polygons normal vector
+      var absNormal = vec3.fromValues(Math.abs(polygon._worldnormal[0]), Math.abs(polygon._worldnormal[1]), Math.abs(polygon._worldnormal[2]));
+      // intersection counter
+      var numIntersects = 0;
+      // the vector for the test line, can be any 2D vector
+      var testVector = vec2.fromValues(1, 1);
+
+      // for every vertice of the polygon
+      for (var l = 0; l < polygon.vertices.length; l++)
       {
-         var mouse = Phoria.View.events[el.id];
-         if (mouse)
+         var point1, point2,
+             intersection2D;
+
+         // use orthogonal planes to check if the point is in shape in 2D
+         // the component with the highest normal value is dropped
+         // as this gives the best approximation of the original shape
+
+         // drop z coordinates
+         if (absNormal[2] >= absNormal[0] && absNormal[2] >= absNormal[1])
          {
-            el.removeEventListener('mousemove', mouse.onMouseMove, false);
-            el.removeEventListener('mousedown', mouse.onMouseDown, false);
-            el.removeEventListener('mouseup', mouse.onMouseUp, false);
-            el.removeEventListener('mouseout', mouse.onMouseOut, false);
-            Phoria.View.events[el.id] = null;
+            point1 = vec2.fromValues(points[polygon.vertices[l]][0], points[polygon.vertices[l]][1]);
+            point2;
+            if (l < polygon.vertices.length - 1)
+               point2 = vec2.fromValues(points[polygon.vertices[l + 1]][0], points[polygon.vertices[l + 1]][1]);
+            else
+               point2 = vec2.fromValues(points[polygon.vertices[0]][0], points[polygon.vertices[0]][1]);
+
+            intersection2D = vec2.fromValues(intersection[0], intersection[1]);
+         }
+         // drop y coordinates
+         else if (absNormal[1] > absNormal[0])
+         {
+            point1 = vec2.fromValues(points[polygon.vertices[l]][2], points[polygon.vertices[l]][0]);
+            point2;
+            if (l < polygon.vertices.length - 1)
+               point2 = vec2.fromValues(points[polygon.vertices[l + 1]][2], points[polygon.vertices[l + 1]][0]);
+            else
+               point2 = vec2.fromValues(points[polygon.vertices[0]][2], points[polygon.vertices[0]][0]);
+
+            intersection2D = vec2.fromValues(intersection[2], intersection[0]);
+         }
+         // drop x coordinates
+         else
+         {
+            point1 = vec2.fromValues(points[polygon.vertices[l]][1], points[polygon.vertices[l]][2]);
+            point2;
+            if (l < polygon.vertices.length - 1)
+               point2 = vec2.fromValues(points[polygon.vertices[l + 1]][1], points[polygon.vertices[l + 1]][2]);
+            else
+               point2 = vec2.fromValues(points[polygon.vertices[0]][1], points[polygon.vertices[0]][2]);
+
+            intersection2D = vec2.fromValues(intersection[1], intersection[2]);
+         }
+
+         // check if the vector from the intersection point intersects the line section
+         if (Phoria.Util.sectionLineIntersect2D(point1, point2, intersection2D, testVector))
+         {
+            // increase intersect counter
+            numIntersects++;
          }
       }
+
+      // uneven number of intersects, mean the point is inside the object
+      // even number of intersects, means its outside
+      return (numIntersects % 2 === 1);
    }
-   
-   Phoria.View.getMouseEvents = function getMouseEvents(el)
+
+   Phoria.Util.sectionLineIntersect2D = function sectionLineIntersect2D(p1, p2, p, v)
    {
-      return Phoria.View.events[el.id];
+      // get line section's vector
+      var s = vec2.create();
+      vec2.subtract(s, p2, p1);
+
+      // calculate cross product of line vectors
+      var svCross = vec3.create();
+      vec2.cross(svCross, s, v)
+
+      // if lines are parallel, they will never intersect
+      if (svCross[2] === 0)
+         return false;
+
+      // l1 = p1 + t * s
+      // l2 = p + u * v
+      // where l1 = l2 the lines intersect thus,
+      // t = (p x v - p1 x v) / (s x v)
+      var t = (p[0] * v[1] - p[1] * v[0] - p1[0] * v[1] + p1[1] * v[0]) / svCross[2];
+      // if v's x value is 0, use the other equation to calculate scalar u.
+      var u;
+      if (v[0] !== 0)
+         u = (p1[0] + t * s[0] - p[0]) / v[0];
+      else
+         u = (p1[1] + t * s[1] - p[1]) / v[1];
+
+      // intersection point
+      var ip = vec2.create();
+      vec2.scaleAndAdd(ip, p1, s, t);
+
+      // check if intersection is in the section line
+      var doesIntersect = { x: false, y: false };
+
+      // only check in positive direction of test vector
+      if (u >= 0)
+      {
+         if (p1[0] > p2[0])
+         {
+            if (ip[0] <= p1[0] && ip[0] >= p2[0])
+               doesIntersect.x = true;
+         }
+         else
+         {
+            if (ip[0] >= p1[0] && ip[0] <= p2[0])
+               doesIntersect.x = true;
+         }
+
+         if (p1[1] > p2[1])
+         {
+            if (ip[1] <= p1[1] && ip[1] >= p2[1])
+               doesIntersect.y = true;
+         }
+         else
+         {
+            if (ip[1] >= p1[1] && ip[1] <= p2[1])
+               doesIntersect.y = true;
+         }
+      }
+      // return true if it is
+      return (doesIntersect.x && doesIntersect.y);
    }
 
 })();
