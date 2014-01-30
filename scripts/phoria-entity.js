@@ -378,6 +378,56 @@ Phoria.CLIP_ARRAY_TYPE = (typeof Uint32Array !== 'undefined') ? Uint32Array : Ar
          {
             this._clip = new Phoria.CLIP_ARRAY_TYPE(len);
          }
+      },
+      
+      /**
+       * Return an object describing the bounding rectangle coordinates of the renderable object in screen coordinates.
+       * @return an object with properties; minx, miny, maxx, maxy
+       */
+      getScreenBounds: function getScreenBounds()
+      {
+         var minx=10000,miny=10000,maxx=-10000,maxy=-10000;
+         for (var i=0,p; i<this._coords.length; i++)
+         {
+            p = this._coords[i];
+            if (p[0] < minx) minx = p[0];
+            if (p[0] > maxx) maxx = p[0];
+            if (p[1] < miny) miny = p[1];
+            if (p[1] > maxy) maxy = p[1];
+         }
+         return {
+            minx: minx,
+            miny: miny,
+            maxx: maxx,
+            maxy: maxy
+         };
+      },
+      
+      /**
+       * Return an object describing the bounding cube coordinates of the entity in world coordinates.
+       * @return an object with properties; minx, miny, minz, maxx, maxy, maxz
+       */
+      getWorldBounds: function getWorldBounds()
+      {
+         var minx=10000,miny=10000,minz=10000,maxx=-10000,maxy=-10000,maxz=-10000;
+         for (var i=0,p; i<this._worldcoords.length; i++)
+         {
+            p = this._worldcoords[i];
+            if (p[0] < minx) minx = p[0];
+            if (p[0] > maxx) maxx = p[0];
+            if (p[1] < miny) miny = p[1];
+            if (p[1] > maxy) maxy = p[1];
+            if (p[2] < minz) minz = p[2];
+            if (p[2] > maxz) maxz = p[2];
+         }
+         return {
+            minx: minx,
+            miny: miny,
+            maxx: maxx,
+            maxy: maxy,
+            minz: minz,
+            maxz: maxz
+         };
       }
    });
 
