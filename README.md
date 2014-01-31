@@ -19,6 +19,10 @@ http://www.kevs3d.co.uk/dev/phoria/test0uv.html - test 0uv - UV coordinates text
 
 http://www.kevs3d.co.uk/dev/phoria/test0k.html - test 0k - WASD and arrow keys move around scene
 
+http://www.kevs3d.co.uk/dev/phoria/test0r.html - test 0r - incremental rotation - mouse control
+
+http://www.kevs3d.co.uk/dev/phoria/test0p.html - test 0p - object selection 'picking'
+
 http://www.kevs3d.co.uk/dev/phoria/test1.html - test 1 - animated point lights around a cube
 
 http://www.kevs3d.co.uk/dev/phoria/test1d.html - test 1d - live debug information in a scene
