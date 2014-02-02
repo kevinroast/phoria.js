@@ -36,15 +36,7 @@
                switch (obj.style.objectsortmode)
                {
                   case "sorted":
-                     // get average z coord - special case for particles with single coordinate
-                     if (obj._coords.length === 1)
-                     {
-                        obj._averagez = obj._coords[0][2];
-                     }
-                     else
-                     {
-                        obj._averagez = Phoria.Util.averageObjectZ(obj._coords);
-                     }
+                     // average z coord is calculated during scene processing
                      break;
                   case "front":
                      // to the front - remember the Z direction is reversed

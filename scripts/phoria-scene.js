@@ -442,7 +442,7 @@
                   }
                   
                   // main vertex processing loop
-                  for (var v=0, verts, vec, w; v<len; v++)
+                  for (var v=0, verts, vec, w, avz=0; v<len; v++)
                   {
                      // construct homogeneous coordinate for the vertex as a vec4
                      verts = obj.points[v];
@@ -480,7 +480,12 @@
                      // linear transform to viewport - could combine with division above - but for clarity it is not
                      vec[0] = vpw * vec[0] + vpx + vpw;
                      vec[1] = vph * vec[1] + vpy + vph;
+                     
+                     // keep track of average Z here as it's no overhead and it's useful for rendering
+                     avz += vec[2];
                   }
+                  // store average Z coordinate
+                  obj._averagez = len > 1 ? avz/len : avz;
                   
                   // if entire object is clipped, do not bother with final steps or adding to render list
                   if (objClip !== len)
@@ -510,6 +515,7 @@
                                     break;
                               }
                            }
+                           break;
                         }
                      }
 
