@@ -86,6 +86,24 @@ mat4.fromYPR = function(yaw, pitch, roll) {
    return out;
 };
 
+quat.fromYPR = function(yaw, pitch, roll) {
+    var num9 = roll * 0.5;
+    var num6 = Math.sin(num9);
+    var num5 = Math.cos(num9);
+    var num8 = pitch * 0.5;
+    var num4 = Math.sin(num8);
+    var num3 = Math.cos(num8);
+    var num7 = yaw * 0.5;
+    var num2 = Math.sin(num7);
+    var num = Math.cos(num7);
+    var out = new Array(4);
+    out[0] = ((num * num4) * num5) + ((num2 * num3) * num6);
+    out[1] = ((num2 * num3) * num5) - ((num * num4) * num6);
+    out[2] = ((num * num3) * num6) - ((num2 * num4) * num5);
+    out[3] = ((num * num3) * num5) + ((num2 * num4) * num6);
+    return out;
+};
+
 
 /**
  * Phoria root namespace.
@@ -95,16 +113,15 @@ mat4.fromYPR = function(yaw, pitch, roll) {
 if (typeof Phoria === "undefined" || !Phoria)
 {
    var Phoria = {};
+   
+   // Global static Phoria constants
+   Phoria.RADIANS = Math.PI/180.0;
+   Phoria.TWOPI = Math.PI*2;
+   Phoria.ONEOPI = 1.0/Math.PI;
+   Phoria.PIO2 = Math.PI/2;
+   Phoria.PIO4 = Math.PI/4;
+   Phoria.EPSILON = 0.000001;
 }
-
-
-// Global Phoria constants
-Phoria.RADIANS = Math.PI/180.0;
-Phoria.TWOPI = Math.PI*2;
-Phoria.ONEOPI = 1.0/Math.PI;
-Phoria.PIO2 = Math.PI/2;
-Phoria.PIO4 = Math.PI/4;
-Phoria.EPSILON = 0.000001;
 
 
 (function() {

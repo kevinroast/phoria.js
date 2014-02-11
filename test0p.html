@@ -61,7 +61,7 @@ function onloadHandler()
          color: [120, 0, 0]
       }
    });
-   cube1.scaleN(1.25).rotateY(0.5).translateX(3);
+   cube1.scaleN(1.25).translateZ(-2).translateX(3);
    scene.graph.push(cube1);
    
    var c2 = Phoria.Util.generateUnitCube();
@@ -73,7 +73,7 @@ function onloadHandler()
          color: [0, 0, 120]
       }
    });
-   cube2.rotateY(1.5).translateZ(-4);
+   cube2.translateX(-4).rotateY(1.5);
    scene.graph.push(cube2);
    
    var c3 = Phoria.Util.generateUnitCube();
@@ -86,7 +86,7 @@ function onloadHandler()
          color: [0, 120, 0]
       }
    });
-   cube3.scaleN(0.7).rotateX(0.8).translateY(3);
+   cube3.scaleN(0.7).translateY(2).rotateX(0.8);
    scene.graph.push(cube3);
    
    // add a light
