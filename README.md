@@ -21,6 +21,8 @@ http://www.kevs3d.co.uk/dev/phoria/test0k.html - test 0k - WASD and arrow keys m
 
 http://www.kevs3d.co.uk/dev/phoria/test0r.html - test 0r - incremental rotation - mouse control
 
+http://www.kevs3d.co.uk/dev/phoria/test0q.html - test 0q - World and Local axis rotation using quaternions
+
 http://www.kevs3d.co.uk/dev/phoria/test0p.html - test 0p - object selection 'picking'
 
 http://www.kevs3d.co.uk/dev/phoria/test1.html - test 1 - animated point lights around a cube
