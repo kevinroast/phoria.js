@@ -137,20 +137,20 @@ function onloadHandler()
    var cobra2 = new Phoria.Entity(), cobra3 = new Phoria.Entity();
    Phoria.Util.combine(cobra2, cobra1);
    Phoria.Util.combine(cobra3, cobra1);
-   cobra1.translateY(-200).rotateX(-Math.PI*0.5);
+   cobra1.translateY(-500).rotateX(-Math.PI*0.5);
    cobra1.onScene(function() {
-      this.translateY(0.73);
-      this.rotateZ(Math.PI*0.002)
+      this.translateZ(2.5);
+      this.rotateZ(Math.PI*0.003)
    });
-   cobra2.translateX(50).translateY(-200).rotateX(-Math.PI*0.5);
+   cobra2.translateX(175).translateY(-600).rotateX(-Math.PI*0.45);
    cobra2.onScene(function() {
-      this.translateY(0.78);
+      this.translateZ(2.75);
       this.rotateZ(-Math.PI*0.001)
    });
-   cobra3.translateZ(-50).translateY(-200).rotateX(-Math.PI*0.5);
+   cobra3.translateZ(-100).translateY(-450).rotateX(-Math.PI*0.55);
    cobra3.onScene(function() {
-      this.translateY(0.75);
-      this.rotateZ(Math.PI*0.0015)
+      this.translateZ(2.35);
+      this.rotateZ(Math.PI*0.002)
    });
 
    // comet - particle emitter

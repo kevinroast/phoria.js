@@ -149,7 +149,7 @@ function init()
          testCube.rotateY(0.5*Phoria.RADIANS);
          // translate local matrix of child object - will receive rotation from parent
          var r = Math.sin(Date.now() / 1000);
-         childObj.identity().translate(vec3.fromValues(0, r + 3, r * 3)).rotateX(r);
+         childObj.identity().rotateX(Math.sin(Date.now() / 1000)*1).translateY(Math.sin(Date.now() / 1000) + 3);
          // translate visible light objects around the origin - will rotate child Light emitters
          var sine = Math.sin(Date.now() / 500);
          blueLightObj.identity().rotateY(rotates[0]+=1*Phoria.RADIANS).translateY(sine);
