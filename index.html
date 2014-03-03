@@ -3,17 +3,8 @@
    <head>
       <meta charset="utf-8">
       <title>phoria.js</title>
+      <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
       <style type="text/css">
-@font-face
-{
-   font-family: HelveticaNeue;
-   src: url('HelveticaNeueLTStd-Lt.otf');
-}
-@font-face
-{
-   font-family: HelveticaNeueBold;
-   src: url('HelveticaNeueLTStd-Md.otf');
-}
 @font-face
 {
    font-family: OstrichSans;
@@ -22,7 +13,7 @@
 body
 {
    background-color: #fff;
-   font-family: HelveticaNeue, Helvetica;
+   font-family: 'Open Sans', Helvetica;
    color: #333;
 }
 .header
@@ -39,6 +30,7 @@ P
    padding-top: 0;
    padding-bottom: 0;
    line-height: 1em;
+   margin-top: 0;
 }
 .inline
 {
@@ -50,7 +42,7 @@ P
 }
 .title
 {
-   font-family: HelveticaNeue, Helvetica;
+   font-family: 'Open Sans', Helvetica;
    padding-left: 20px;
    padding-top: 120px;
    color: #000;
@@ -58,7 +50,8 @@ P
 }
 .desc
 {
-   font-family: HelveticaNeueBold, Helvetica;
+   font-family: 'Open Sans', Helvetica;
+   font-weight: 300;
    color: #333;
    line-height: 1.75em;
 }
@@ -74,6 +67,8 @@ canvas
 }
 a, a:visited, a:active, a:hover
 {
+   font-size: 1em;
+   line-height: 1em;
    color: #225588;
    text-decoration: none;
 }
@@ -89,7 +84,7 @@ a:hover
 .button-overlay
 {
    position: absolute;
-   right: 1em;
+   right: 8em;
 }
       </style>
       <script src="scripts/gl-matrix-min.js"></script>
@@ -242,6 +237,7 @@ function onloadHandler()
    </head>
    
    <body>
+      <a href="https://github.com/kevinroast"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://github-camo.global.ssl.fastly.net/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"></a>
       <div class="button-overlay">
          <!-- AddThis Button BEGIN -->
          <div class="addthis_toolbox addthis_default_style addthis_32x32_style">
