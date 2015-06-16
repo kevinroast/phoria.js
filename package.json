@@ -1,0 +1,18 @@
+{
+  "name": "phoria.js",
+  "version": "0.99.0",
+  "description": "JavaScript library for simple 3D graphics and visualisation on a HTML5 canvas 2D renderer. It does not use WebGL. Works on all HTML5 browsers, including desktop, iOS and Android.",
+  "dependencies": {
+    "grunt": "~0.4.4",
+    "grunt-contrib-requirejs": "^0.4.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kevinroast/phoria.js.git"
+  },
+  "author": "kevinroast",
+  "bugs": {
+    "url": "https://github.com/kevinroast/phoria.js/issues"
+  },
+  "homepage": "https://github.com/kevinroast/phoria.js"
+}
