@@ -1045,6 +1045,151 @@ if (typeof Phoria === "undefined" || !Phoria)
       });
    }
    
+   /**
+    * Geometry importer for Wavefront (.obj) text 3D file format. The data itself is intended
+    * to be provided raw. This uses the same fucntion as Phoria.Util.importGeometryWavefront().
+    * 
+    * @param config  JavaScript object describing the url and configuration params for the import:
+    *    {
+    *       data: string         // raw wavefront data (mandatory)
+    *       fnSuccess: function  // callback function to execute once object is loaded - function({points:[], polygons:[]})
+    *       scale: 1.0           // optional scaling factor - 1.0 is the default
+    *       scaleTo: 1.0         // optional automatically scale object to a specific size
+    *       center: false        // optional centering of imported geometry to the origin
+    *       reorder: false       // true to switch order of poly vertices if back-to-front ordering
+    *    }
+    */
+   Phoria.Util.importGeometryWavefrontLocal = function importGeometryWavefrontLocal(config)
+	{
+		var vertex = [], faces = [], uvs = [];
+		var re = /\s+/;   // 1 or more spaces can separate tokens within a line
+		var scale = config.scale || 1;
+		var minx, miny, minz, maxx, maxy, maxz;
+		minx = miny = minz = maxx = maxy = maxz = 0;
+		
+		sub = function(data) {
+			var lines = data.split('\n'); // split line by line
+			for (var i = 0;i < lines.length;i++)
+			{
+				 var line = lines[i].split(re);
+				 
+				 switch (line[0])
+				 {
+						case 'v':
+						{
+							 var x = parseFloat(line[1])*scale,
+									 y = parseFloat(line[2])*scale,
+									 z = parseFloat(line[3])*scale;
+							 vertex.push({'x': x, 'y': y, 'z': z});
+							 if (x < minx) minx = x;
+							 else if (x > maxx) maxx = x;
+							 if (y < miny) miny = y;
+							 else if (y > maxy) maxy = y;
+							 if (z < minz) minz = z;
+							 else if (z > maxz) maxz = z;
+						}
+						break;
+						
+						case 'vt':
+						{
+							 var u = parseFloat(line[1]),
+									 v = parseFloat(line[2]);
+							 uvs.push([u,v]);
+						}
+						break;
+						
+						case 'f':
+						{
+							 line.splice(0, 1); // remove "f"
+							 var vertices = [], uvcoords = [];
+							 for (var j = 0,vindex,vps; j < line.length; j++)
+							 {
+									vindex = line[config.reorder ? line.length - j - 1 : j];
+									// deal with /r/n line endings
+									if (vindex.length !== 0)
+									{
+										 // OBJ format vertices are indexed from 1
+										 vps = vindex.split('/');
+										 vertices.push(parseInt(vps[0]) - 1);
+										 // gather texture coords
+										 if (vps.length > 1 && vindex.indexOf("//") === -1)
+										 {
+												var uv = parseInt(vps[1]) - 1;
+												if (uvs.length > uv)
+												{
+													 uvcoords.push(uvs[uv][0], uvs[uv][1]);
+												}
+										 }
+									}
+							 }
+							 var poly = {'vertices': vertices};
+							 faces.push(poly);
+							 if (uvcoords.length !== 0) poly.uvs = uvcoords;
+						}
+						break;
+				 }
+			}
+			if (config.center)
+			{
+				 // calculate centre displacement for object and adjust each point
+				 var cdispx = (minx + maxx)/2.0,
+						 cdispy = (miny + maxy)/2.0,
+						 cdispz = (minz + maxz)/2.0;
+				 for (var i=0; i<vertex.length; i++)
+				 {
+						vertex[i].x -= cdispx;
+						vertex[i].y -= cdispy;
+						vertex[i].z -= cdispz;
+				 }
+			}
+			if (config.scaleTo)
+			{
+				 // calc total size multipliers using max object limits and scale
+				 var sizex = maxx - minx,
+						 sizey = maxy - miny,
+						 sizez = maxz - minz;
+
+				 // find largest of multipliers and use it as scale factor
+				 var scalefactor = 0.0;
+				 if (sizey > sizex) 
+				 {
+						if (sizez > sizey) 
+						{
+							 // use sizez
+							 scalefactor = 1.0 / (sizez/config.scaleTo);
+						}
+						else
+						{
+							 // use sizey
+							 scalefactor = 1.0 / (sizey/config.scaleTo);
+						}
+				 }
+				 else if (sizez > sizex) 
+				 {
+						// use sizez
+						scalefactor = 1.0 / (sizez/config.scaleTo);
+				 }
+				 else 
+				 {
+						// use sizex
+						scalefactor = 1.0 / (sizex/config.scaleTo);
+				 }
+				 for (var i=0; i<vertex.length; i++)
+				 {
+						vertex[i].x *= scalefactor;
+						vertex[i].y *= scalefactor;
+						vertex[i].z *= scalefactor;
+				 }
+			}
+			return {
+					points: vertex,
+					polygons: faces
+			};
+		}
+		
+		return sub(config.data);
+	}
+   
    Phoria.Util.calculatePolarFromPlanar = function calculatePolarFromPlanar(planar)
    {
       // array positions correspond to: r = [0], t = [1], p = [2]
